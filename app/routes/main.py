@@ -1,11 +1,17 @@
-from flask import Blueprint, render_template, redirect, url_for
+from flask import Blueprint, render_template, redirect, url_for, send_file, current_app
 from app.utils.decorators import get_current_user
 from app.utils.helpers import get_archetype_cards
 from app.models.badge import Badge
 from app.models.challenge import Challenge
 from app.models.post import LockInPost, PostPrivacy
+from pathlib import Path
 
 main_bp = Blueprint('main', __name__)
+
+@main_bp.route('/google55c3db374be43eeb.html')
+def google_verification():
+    verification_file = Path(current_app.root_path).parent / 'google55c3db374be43eeb.html'
+    return send_file(verification_file, mimetype='text/html')
 
 
 @main_bp.route('/')
