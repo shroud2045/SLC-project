@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Content Reports - Admin - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 1.5rem 0;">
+  <div class="admin-header">
+    <div>
+      <h1 style="font-size: 2rem;">🚩 Content Moderation Reports</h1>
+      <p style="color: var(--text-secondary); font-size: 0.95rem;">Review reports filed by users on posts, comments, or chat.</p>
+    </div>
+  </div>
+
+  <div class="admin-nav-tabs">
+    <a href="{{ url_for('admin.index') }}" class="admin-tab">Overview</a>
+    <a href="{{ url_for('admin.users_list') }}" class="admin-tab">Users</a>
+    <a href="{{ url_for('admin.reports_list') }}" class="admin-tab active">Reports</a>
+    <a href="{{ url_for('admin.filters_management') }}" class="admin-tab">Word Filters</a>
+    {% if current_user.is_admin() %}
+      <a href="{{ url_for('admin.badges_management') }}" class="admin-tab">Badges</a>
+      <a href="{{ url_for('admin.challenges_management') }}" class="admin-tab">Challenges</a>
+      <a href="{{ url_for('admin.audit_logs') }}" class="admin-tab">Audit Logs</a>
+    {% endif %}
+  </div>
+
+  {% if reports %}
+    <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+      {% for r in reports %}
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+            <div>
+              <span class="status-pill {% if r.status == 'PENDING' %}status-pending{% elif r.status == 'RESOLVED' %}status-resolved{% else %}status-muted{% endif %}">
+                {{ r.status }}
+              </span>
+              <span style="font-weight: 700; margin-left: 0.5rem;">Report #{{ r.id }}: {{ r.target_type }} #{{ r.target_id }}</span>
+            </div>
+            <span style="font-size: 0.8rem; color: var(--text-muted);">Filed {{ r.created_at.strftime('%b %d, %H:%M') }}</span>
+          </div>
+
+          <p style="color: var(--text-primary); font-size: 0.95rem; margin-bottom: 1rem; background: rgba(0,0,0,0.2); padding: 0.75rem; border-radius: var(--radius-sm);">
+            <strong>Report Reason:</strong> {{ r.reason }}
+          </p>
+
+          <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+            Filed by: <span style="color: var(--accent-cyan); font-weight: 600;">{{ r.reporter.username if r.reporter else 'Anonymous' }}</span>
+          </div>
+
+          {% if r.status == 'PENDING' %}
+            <form action="{{ url_for('admin.resolve_report', report_id=r.id) }}" method="POST" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="text" name="admin_notes" class="form-control" placeholder="Moderator resolution notes..." style="max-width: 350px; padding: 0.45rem 0.75rem; font-size: 0.85rem;">
+              <button type="submit" name="action_type" value="RESOLVED" class="btn btn-primary btn-sm">Resolve Action Taken</button>
+              <button type="submit" name="action_type" value="DISMISSED" class="btn btn-secondary btn-sm">Dismiss</button>
+            </form>
+          {% else %}
+            <div style="font-size: 0.85rem; color: var(--text-secondary);">
+              <em>Resolved with notes: {{ r.admin_notes or 'No notes recorded.' }}</em>
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card text-center" style="padding: 3rem;">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">🛡️</div>
+      <h3>No Reports Filed</h3>
+      <p style="color: var(--text-secondary);">Community feed and chat are clear of reported issues.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

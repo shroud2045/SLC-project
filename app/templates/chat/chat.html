@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Community Chat - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container container-sm" style="padding: 1rem 0;">
+  <div class="chat-container">
+    <!-- Chat Header -->
+    <div class="chat-header">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <span class="flame-pulse" style="font-size: 1.5rem;">🔥</span>
+        <div>
+          <h2 style="font-size: 1.2rem; line-height: 1.2;">Live Lockin Chatroom</h2>
+          <div style="font-size: 0.75rem; color: var(--text-muted);">Real-time community accountability & support</div>
+        </div>
+      </div>
+      <span class="badge-pill badge-uncommon">● LIVE</span>
+    </div>
+
+    <!-- Messages Window -->
+    <div id="chatMessages" class="chat-messages">
+      {% if messages %}
+        {% for msg in messages %}
+          {% set is_mine = current_user and current_user.id == msg.user_id %}
+          <div id="chat-msg-{{ msg.id }}" class="chat-bubble {% if is_mine %}mine{% endif %}" data-message-id="{{ msg.id }}">
+            {% if msg.author.avatar_filename %}
+              <img src="{{ url_for('uploads.serve_upload', filename=msg.author.avatar_filename) }}" class="chat-avatar" alt="{{ msg.author.username }}">
+            {% else %}
+              <div class="chat-avatar" style="background:#1e293b; display:flex; align-items:center; justify-content:center; font-weight:bold; color:var(--accent-cyan);">
+                {{ msg.author.username[0]|upper }}
+              </div>
+            {% endif %}
+            <div class="chat-content-wrap">
+              <div class="chat-meta">
+                <span class="chat-username">{{ msg.author.username }}</span>
+                {% if msg.author.role == 'ADMIN' %}
+                  <span class="badge-pill badge-mythic" style="font-size: 0.65rem;">ADMIN</span>
+                {% elif msg.author.role == 'MODERATOR' %}
+                  <span class="badge-pill badge-rare" style="font-size: 0.65rem;">MOD</span>
+                {% endif %}
+                <span class="chat-time">{{ msg.created_at.strftime('%H:%M:%S') }}</span>
+              </div>
+              <div class="chat-text">
+                {% if msg.is_deleted %}
+                  <em>[Message removed by moderator]</em>
+                {% else %}
+                  {{ msg.content }}
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div style="text-align: center; color: var(--text-muted); padding: 3rem 0;">
+          No messages yet. Drop the first hello!
+        </div>
+      {% endif %}
+    </div>
+
+    <!-- Message Input Bar -->
+    <div class="chat-input-area">
+      {% if current_user.is_muted %}
+        <div class="alert alert-danger" style="margin-bottom: 0; padding: 0.6rem 1rem; font-size: 0.85rem;">
+          🔇 Your account has been muted by a moderator from sending messages.
+        </div>
+      {% else %}
+        <form id="chatForm" class="chat-form">
+          <input type="text" id="chatInput" class="chat-input" placeholder="Type your message... (Enter to send)" maxlength="500" required autocomplete="off">
+          <button type="submit" id="btnChatSend" class="btn btn-primary" style="border-radius: var(--radius-full); padding: 0.75rem 1.25rem;">
+            Send
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}

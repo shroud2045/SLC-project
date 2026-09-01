@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }} - Community - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container container-sm" style="padding: 1.5rem 0;">
+  <!-- Post Container -->
+  <div class="post-card" style="padding: 2rem; margin-bottom: 2rem;">
+    <div class="post-meta">
+      <div class="post-author-info">
+        <a href="{{ url_for('profile.view_profile', username=post.author.username) }}" style="display: flex; align-items: center; gap: 0.75rem; text-decoration: none;">
+          {% if post.author.avatar_filename %}
+            <img src="{{ url_for('uploads.serve_upload', filename=post.author.avatar_filename) }}" class="nav-avatar" alt="{{ post.author.username }}">
+          {% else %}
+            <div class="nav-avatar" style="background: #1e293b; display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--accent-cyan);">
+              {{ post.author.username[0]|upper }}
+            </div>
+          {% endif %}
+          <div>
+            <div style="font-weight: 700; color: var(--text-primary);">{{ post.author.username }}</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ post.post_date.strftime('%b %d, %Y') }}</div>
+          </div>
+        </a>
+      </div>
+      <div class="badge-pill badge-uncommon" style="font-family: var(--font-mono);">
+        ⏱️ {{ post.hours_worked }}h Focused
+      </div>
+    </div>
+
+    <h1 style="font-size: 1.8rem; margin-bottom: 1rem;">{{ post.title }}</h1>
+    <p style="color: var(--text-secondary); font-size: 1rem; line-height: 1.6; margin-bottom: 1.5rem;">
+      {{ post.description }}
+    </p>
+
+    {% if post.worked_on %}
+      <div style="margin-bottom: 1rem;">
+        <h4 style="font-size: 0.85rem; color: var(--accent-cyan); text-transform: uppercase;">Worked On</h4>
+        <p style="color: var(--text-secondary); font-size: 0.95rem; white-space: pre-line;">{{ post.worked_on }}</p>
+      </div>
+    {% endif %}
+
+    {% if post.completed %}
+      <div style="margin-bottom: 1rem;">
+        <h4 style="font-size: 0.85rem; color: var(--accent-emerald); text-transform: uppercase;">Completed</h4>
+        <p style="color: var(--text-secondary); font-size: 0.95rem; white-space: pre-line;">{{ post.completed }}</p>
+      </div>
+    {% endif %}
+
+    {% if post.learned %}
+      <div style="margin-bottom: 1rem;">
+        <h4 style="font-size: 0.85rem; color: var(--accent-purple); text-transform: uppercase;">Key Lessons</h4>
+        <p style="color: var(--text-secondary); font-size: 0.95rem; white-space: pre-line;">{{ post.learned }}</p>
+      </div>
+    {% endif %}
+
+    <!-- Uploaded images -->
+    {% if post.images.count() > 0 %}
+      <div class="post-images-grid" style="margin-bottom: 1.5rem;">
+        {% for img in post.images %}
+          <a href="{{ url_for('uploads.serve_upload', filename=img.filename) }}" target="_blank" class="post-image-thumb">
+            <img src="{{ url_for('uploads.serve_upload', filename=img.filename) }}" alt="Proof screenshot">
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Reactions Bar & Report -->
+    <div class="reaction-bar justify-between">
+      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        {% set counts = post.reaction_counts() %}
+        {% for r_type, emoji in ReactionType.EMOJIS.items() %}
+          <button type="button" class="reaction-btn {% if r_type in user_reactions %}active{% endif %}" data-post-id="{{ post.id }}" data-reaction="{{ r_type }}">
+            <span>{{ emoji }}</span>
+            <span class="reaction-count">{{ counts.get(r_type, 0) }}</span>
+          </button>
+        {% endfor %}
+      </div>
+
+      {% if current_user and current_user.id != post.user_id %}
+        <!-- Report Post Form -->
+        <form action="{{ url_for('community.file_report') }}" method="POST" onsubmit="return confirm('Report this post for moderator review?');" style="display: inline;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="target_type" value="POST">
+          <input type="hidden" name="target_id" value="{{ post.id }}">
+          <input type="hidden" name="reason" value="User reported inappropriate post content.">
+          <button type="submit" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; color: var(--text-muted);">
+            🚩 Report
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Comments Section -->
+  <div class="card" style="padding: 2rem;">
+    <h3 style="font-size: 1.3rem; margin-bottom: 1.5rem;">
+      💬 Comments ({{ comments|length }})
+    </h3>
+
+    {% if current_user %}
+      <form action="{{ url_for('community.add_comment', post_id=post.id) }}" method="POST" style="margin-bottom: 2rem;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+          <textarea name="content" class="form-control" rows="2" placeholder="Leave words of encouragement or feedback..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Post Comment</button>
+      </form>
+    {% else %}
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+        <a href="{{ url_for('auth.login') }}">Log in</a> to leave a comment.
+      </p>
+    {% endif %}
+
+    <!-- Comments List -->
+    {% if comments %}
+      <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+        {% for comment in comments %}
+          <div style="padding-bottom: 1rem; border-bottom: 1px solid var(--border-subtle);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-weight: 700; color: var(--accent-cyan); font-size: 0.9rem;">{{ comment.author.username }}</span>
+                {% if comment.author.role == 'ADMIN' %}
+                  <span class="badge-pill badge-mythic" style="font-size: 0.6rem;">ADMIN</span>
+                {% endif %}
+              </div>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">{{ comment.created_at.strftime('%b %d, %H:%M') }}</span>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.9rem;">{{ comment.content }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="color: var(--text-muted); text-align: center; padding: 1rem 0; font-size: 0.9rem;">No comments yet. Drop the first encouraging remark!</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - {{ app_name }}{% endblock %}
+
+{% block content %}
+<!-- Dashboard Hero Banner -->
+<div class="dashboard-hero">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+    <div>
+      <div style="font-size: 0.9rem; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;">
+        OPERATOR DASHBOARD
+      </div>
+      <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem;">
+        Stay Locked In, <span class="gradient-text">{{ current_user.username }}</span>.
+      </h1>
+      <p style="color: var(--text-secondary); max-width: 540px;">
+        {% if stats.is_active_today %}
+          🔥 You have successfully logged progress for today! Streak is secured.
+        {% else %}
+          ⚠️ You have not recorded a lock-in post or timer session today. Don't break the chain!
+        {% endif %}
+      </p>
+    </div>
+
+    <!-- Streak Display Box -->
+    <div class="streak-counter-box">
+      <div class="flame-pulse" style="font-size: 2.5rem;">🔥</div>
+      <div>
+        <div class="streak-number">{{ stats.current_streak }}</div>
+        <div style="font-size: 0.85rem; font-weight: 800; text-transform: uppercase; color: #fed7aa; letter-spacing: 1px;">
+          DAY STREAK
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Primary Stats Grid -->
+<div class="grid grid-4" style="margin-bottom: 2rem;">
+  <div class="stat-widget">
+    <div class="stat-icon" style="color: var(--accent-cyan); background: rgba(0, 229, 255, 0.1);">⏱️</div>
+    <div>
+      <div class="stat-value">{{ stats.today_hours }}h</div>
+      <div class="stat-label">Today's Focus</div>
+    </div>
+  </div>
+
+  <div class="stat-widget">
+    <div class="stat-icon" style="color: var(--accent-emerald); background: rgba(16, 185, 129, 0.1);">⏳</div>
+    <div>
+      <div class="stat-value">{{ stats.total_hours }}h</div>
+      <div class="stat-label">Lifetime Hours</div>
+    </div>
+  </div>
+
+  <div class="stat-widget">
+    <div class="stat-icon" style="color: var(--accent-amber); background: rgba(245, 158, 11, 0.1);">🏆</div>
+    <div>
+      <div class="stat-value">{{ earned_badges|length }}</div>
+      <div class="stat-label">Badges Earned</div>
+    </div>
+  </div>
+
+  <div class="stat-widget">
+    <div class="stat-icon" style="color: var(--accent-purple); background: rgba(168, 85, 247, 0.1);">⚡</div>
+    <div>
+      <div class="stat-value">{{ stats.longest_streak }}d</div>
+      <div class="stat-label">Best Streak</div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Action & Progress Split -->
+<div class="grid grid-2" style="margin-bottom: 2rem; align-items: start;">
+  <!-- Left: Today's Lock-In & Quick Action -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">📝 Today's Lock-In</h2>
+      {% if today_post %}
+        <span class="badge-pill badge-uncommon">COMPLETED</span>
+      {% else %}
+        <span class="badge-pill badge-mythic">PENDING</span>
+      {% endif %}
+    </div>
+
+    {% if today_post %}
+      <div style="margin-bottom: 1.25rem;">
+        <h3 style="font-size: 1.2rem; color: var(--accent-cyan); margin-bottom: 0.5rem;">{{ today_post.title }}</h3>
+        <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 0.75rem;">{{ today_post.description }}</p>
+        <div style="display: flex; gap: 1rem; font-size: 0.85rem; color: var(--text-muted);">
+          <span>⏱️ {{ today_post.hours_worked }} Hours</span>
+          <span>🔒 {{ today_post.privacy }}</span>
+        </div>
+      </div>
+      <div style="display: flex; gap: 0.75rem;">
+        <a href="{{ url_for('posts.view_post', post_id=today_post.id) }}" class="btn btn-secondary btn-sm">View Log</a>
+        <a href="{{ url_for('posts.edit_post', post_id=today_post.id) }}" class="btn btn-outline btn-sm">Edit Entry</a>
+      </div>
+    {% else %}
+      <p style="color: var(--text-secondary); margin-bottom: 1.5rem; font-size: 0.95rem;">
+        Record your hours, challenges conquered, and key takeaways for today to keep your streak alive.
+      </p>
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <a href="{{ url_for('posts.create') }}" class="btn btn-flame">
+          🔥 Record Today's Lock-In
+        </a>
+        <a href="{{ url_for('timer.index') }}" class="btn btn-primary">
+          ⏱️ Launch Timer
+        </a>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: Next Milestone & Challenges -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">🎯 Next Milestone</h2>
+      <a href="{{ url_for('badges.index') }}" class="text-cyan" style="font-size: 0.85rem; font-weight: 600;">View All</a>
+    </div>
+
+    {% if next_streak_badge %}
+      <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem;">
+        <div style="font-size: 2.2rem;">{{ next_streak_badge.icon }}</div>
+        <div>
+          <h4 style="font-size: 1.1rem;">{{ next_streak_badge.name }}</h4>
+          <p style="color: var(--text-secondary); font-size: 0.85rem;">{{ next_streak_badge.description }}</p>
+          <div style="margin-top: 0.5rem; font-size: 0.8rem; font-weight: 700; color: #fb923c;">
+            {{ stats.current_streak }} / {{ next_streak_badge.threshold|int }} Days ({{ (stats.current_streak / next_streak_badge.threshold * 100)|round|int }}%)
+          </div>
+        </div>
+      </div>
+      <!-- Progress Bar -->
+      <div style="background: rgba(255,255,255,0.06); height: 8px; border-radius: var(--radius-full); overflow: hidden;">
+        <div style="background: var(--grad-flame); height: 100%; width: {{ [100, (stats.current_streak / next_streak_badge.threshold * 100)]|min }}%; transition: width 0.5s ease;"></div>
+      </div>
+    {% else %}
+      <div style="text-align: center; padding: 1.5rem; color: var(--text-secondary);">
+        🏆 All major streak milestones completed! You are a living legend in the Crib.
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Recent Posts and Recent Timers -->
+<div class="grid grid-2" style="align-items: start;">
+  <!-- Recent Logs -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">📜 Recent Lock-In Logs</h2>
+      <a href="{{ url_for('posts.my_posts') }}" class="text-cyan" style="font-size: 0.85rem; font-weight: 600;">All Logs</a>
+    </div>
+
+    {% if recent_posts %}
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        {% for p in recent_posts %}
+          <div style="padding-bottom: 0.75rem; border-bottom: 1px solid var(--border-subtle);">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+              <a href="{{ url_for('posts.view_post', post_id=p.id) }}" style="font-weight: 700; color: var(--text-primary);">{{ p.title }}</a>
+              <span style="font-size: 0.8rem; color: var(--text-muted);">{{ p.post_date.strftime('%b %d') }}</span>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ p.description }}</p>
+            <div style="margin-top: 0.25rem; font-size: 0.75rem; color: var(--accent-cyan);">⏱️ {{ p.hours_worked }} Hours • {{ p.privacy }}</div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 1.5rem 0;">No lock-in posts yet. Make your first entry today!</p>
+    {% endif %}
+  </div>
+
+  <!-- Recent Timer Sessions -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">⏱️ Recent Timer Sessions</h2>
+      <a href="{{ url_for('timer.index') }}" class="text-cyan" style="font-size: 0.85rem; font-weight: 600;">Launch Timer</a>
+    </div>
+
+    {% if recent_timers %}
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        {% for ts in recent_timers %}
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 0.85rem; background: rgba(15, 23, 42, 0.6); border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+            <div>
+              <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-primary);">{{ ts.category }} ({{ ts.mode }})</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">{{ ts.created_at.strftime('%b %d, %H:%M') }}</div>
+            </div>
+            <div class="badge-pill badge-uncommon" style="font-family: var(--font-mono);">
+              {{ ts.formatted_duration }}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 1.5rem 0;">No timer sessions recorded yet. Start the clock!</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

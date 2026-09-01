@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Word Filters - Admin - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 1.5rem 0;">
+  <div class="admin-header">
+    <div>
+      <h1 style="font-size: 2rem;">🛡️ Content Filter Rules</h1>
+      <p style="color: var(--text-secondary); font-size: 0.95rem;">Configure server-side keyword and regex filters to eliminate harassment and abuse.</p>
+    </div>
+  </div>
+
+  <div class="admin-nav-tabs">
+    <a href="{{ url_for('admin.index') }}" class="admin-tab">Overview</a>
+    <a href="{{ url_for('admin.users_list') }}" class="admin-tab">Users</a>
+    <a href="{{ url_for('admin.reports_list') }}" class="admin-tab">Reports</a>
+    <a href="{{ url_for('admin.filters_management') }}" class="admin-tab active">Word Filters</a>
+    {% if current_user.is_admin() %}
+      <a href="{{ url_for('admin.badges_management') }}" class="admin-tab">Badges</a>
+      <a href="{{ url_for('admin.challenges_management') }}" class="admin-tab">Challenges</a>
+      <a href="{{ url_for('admin.audit_logs') }}" class="admin-tab">Audit Logs</a>
+    {% endif %}
+  </div>
+
+  <!-- Add New Filter Form -->
+  <div class="card" style="margin-bottom: 2rem; padding: 1.75rem;">
+    <h3 style="font-size: 1.2rem; margin-bottom: 1rem;">+ Add New Filter Rule</h3>
+    <form method="POST" action="{{ url_for('admin.filters_management') }}" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div style="flex: 2; min-width: 220px;">
+        <label class="form-label" for="word_or_pattern">Keyword or Regex Pattern</label>
+        <input type="text" id="word_or_pattern" name="word_or_pattern" class="form-control" placeholder="e.g. badword or (pattern.*)" required>
+      </div>
+
+      <div style="flex: 1; min-width: 150px;">
+        <label class="form-label" for="severity">Severity Action</label>
+        <select id="severity" name="severity" class="form-control">
+          <option value="BLOCK" selected>🚫 BLOCK (Reject post)</option>
+          <option value="FLAG">🚩 FLAG (Log to queue)</option>
+          <option value="WARN">*** WARN (Mask with stars)</option>
+        </select>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 0.5rem; padding-bottom: 0.6rem;">
+        <label class="form-check">
+          <input type="checkbox" name="is_regex">
+          <span style="font-size: 0.85rem; color: var(--text-secondary);">Is Regular Expression</span>
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Add Rule</button>
+    </form>
+  </div>
+
+  <!-- Existing Rules Table -->
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Term / Pattern</th>
+          <th>Type</th>
+          <th>Severity Action</th>
+          <th>Created</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for bw in banned_words %}
+          <tr>
+            <td>#{{ bw.id }}</td>
+            <td style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-cyan);">{{ bw.word_or_pattern }}</td>
+            <td>
+              {% if bw.is_regex %}
+                <span class="badge-pill badge-epic" style="font-size: 0.7rem;">REGEX</span>
+              {% else %}
+                <span class="badge-pill badge-common" style="font-size: 0.7rem;">KEYWORD</span>
+              {% endif %}
+            </td>
+            <td>
+              <span class="badge-pill {% if bw.severity == 'BLOCK' %}badge-mythic{% elif bw.severity == 'FLAG' %}badge-legendary{% else %}badge-rare{% endif %}" style="font-size: 0.75rem;">
+                {{ bw.severity }}
+              </span>
+            </td>
+            <td style="font-size: 0.8rem; color: var(--text-muted);">{{ bw.created_at.strftime('%b %d, %Y') }}</td>
+            <td>
+              <form action="{{ url_for('admin.delete_filter', filter_id=bw.id) }}" method="POST" onsubmit="return confirm('Delete this filter rule?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-danger btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Challenges - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 1.5rem 0;">
+  <div style="text-align: center; margin-bottom: 2.5rem;">
+    <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem;">🎯 Community Challenges</h1>
+    <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto;">
+      Test your limits in structured high-intensity discipline sprints.
+    </p>
+  </div>
+
+  {% if challenges %}
+    <div class="grid grid-2">
+      {% for ch in challenges %}
+        {% set user_ch = user_challenges.get(ch.id) %}
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+            <h3 style="font-size: 1.3rem;">{{ ch.title }}</h3>
+            {% if user_ch %}
+              {% if user_ch.is_completed %}
+                <span class="badge-pill badge-uncommon">COMPLETED 🏆</span>
+              {% else %}
+                <span class="badge-pill badge-rare">IN PROGRESS</span>
+              {% endif %}
+            {% else %}
+              <span class="badge-pill badge-common">OPEN</span>
+            {% endif %}
+          </div>
+
+          <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 1.25rem;">
+            {{ ch.description }}
+          </p>
+
+          <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem; font-size: 0.85rem; color: var(--text-muted);">
+            {% if ch.target_days > 0 %}
+              <div>📅 Target: <strong>{{ ch.target_days }} Days</strong></div>
+            {% endif %}
+            {% if ch.target_hours > 0 %}
+              <div>⏱️ Target: <strong>{{ ch.target_hours }} Hours</strong></div>
+            {% endif %}
+          </div>
+
+          {% if user_ch %}
+            <div style="margin-bottom: 1rem;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.35rem;">
+                <span>Your Progress</span>
+                <span>
+                  {% if ch.target_days > 0 %}
+                    {{ [ch.target_days, stats.current_streak]|min }} / {{ ch.target_days }} Days
+                  {% else %}
+                    {{ [ch.target_hours, stats.total_hours]|min }} / {{ ch.target_hours }} Hours
+                  {% endif %}
+                </span>
+              </div>
+              <div style="background: rgba(255,255,255,0.06); height: 8px; border-radius: var(--radius-full); overflow: hidden;">
+                {% if ch.target_days > 0 %}
+                  {% set pct = [100, (stats.current_streak / ch.target_days * 100)]|min %}
+                {% else %}
+                  {% set pct = [100, (stats.total_hours / ch.target_hours * 100)]|min %}
+                {% endif %}
+                <div style="background: var(--grad-brand); height: 100%; width: {{ pct }}%;"></div>
+              </div>
+            </div>
+          {% else %}
+            <form action="{{ url_for('challenges.join_challenge', challenge_id=ch.id) }}" method="POST">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-primary btn-block">
+                ⚡ Accept Challenge
+              </button>
+            </form>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="card text-center" style="padding: 3rem;">
+      <div style="font-size: 3rem; margin-bottom: 1rem;">🎯</div>
+      <h3 style="margin-bottom: 0.5rem;">No Active Challenges Right Now</h3>
+      <p style="color: var(--text-secondary);">Check back soon as new community sprints are created.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

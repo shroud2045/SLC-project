@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Shroud's Lockin Crib - Relentless Daily Discipline & Streak Tracking{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section style="text-align: center; padding: 3.5rem 0 4.5rem; position: relative;">
+  <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(0, 229, 255, 0.1); border: 1px solid rgba(0, 229, 255, 0.3); border-radius: var(--radius-full); padding: 0.35rem 1rem; margin-bottom: 1.5rem; font-size: 0.85rem; font-weight: 700; color: var(--accent-cyan);">
+    <span>🔥</span> THE DAILY LOCK-IN SANCTUARY
+  </div>
+
+  <h1 style="font-size: clamp(2.5rem, 6vw, 4.2rem); font-weight: 900; letter-spacing: -1px; line-height: 1.15; max-width: 900px; margin: 0 auto 1.5rem;">
+    Lock In. Track Your Work. <br>
+    <span class="gradient-text">Become The Person You Said You Would Become.</span>
+  </h1>
+
+  <p style="color: var(--text-secondary); font-size: 1.25rem; max-width: 680px; margin: 0 auto 2.5rem; line-height: 1.6;">
+    No excuses. No fake motivation. Log your daily coding, cybersecurity labs, fitness reps, and study hours. Build unbreakable streaks and unlock mastery.
+  </p>
+
+  <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-bottom: 3.5rem;">
+    <a href="{{ url_for('auth.register') }}" class="btn btn-flame btn-lg">
+      🔥 Start Your Day 1 Lock-In
+    </a>
+    <a href="{{ url_for('community.feed') }}" class="btn btn-secondary btn-lg">
+      🌐 Explore Community Feed
+    </a>
+  </div>
+
+  <!-- Quick Stat Badges Banner -->
+  <div style="display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; color: var(--text-muted); font-size: 0.9rem; font-weight: 600;">
+    <div>✓ 100% Deterministic Badges</div>
+    <div>✓ Server-Validated Timers</div>
+    <div>✓ Zero Data Leakage Privacy</div>
+    <div>✓ AI Productivity Engine</div>
+  </div>
+</section>
+
+<!-- Core Features Grid -->
+<section style="margin-bottom: 5rem;">
+  <div style="text-align: center; margin-bottom: 3rem;">
+    <h2 style="font-size: 2.2rem; margin-bottom: 0.5rem;">Engineered for High Performance</h2>
+    <p style="color: var(--text-secondary);">Everything you need to maintain supreme consistency.</p>
+  </div>
+
+  <div class="grid grid-3">
+    <!-- Feature 1: Daily Lock-In -->
+    <div class="card">
+      <div style="font-size: 2.2rem; margin-bottom: 1rem;">📝</div>
+      <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--accent-cyan);">Daily Lock-In Logs</h3>
+      <p style="color: var(--text-secondary); font-size: 0.95rem;">
+        Document what you worked on, what you completed, and what you learned. Attach proof screenshots. Default private or shared to the community.
+      </p>
+    </div>
+
+    <!-- Feature 2: Validated Timer -->
+    <div class="card">
+      <div style="font-size: 2.2rem; margin-bottom: 1rem;">⏱️</div>
+      <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--accent-emerald);">Productivity Timer</h3>
+      <p style="color: var(--text-secondary); font-size: 0.95rem;">
+        Built-in Pomodoro (25/5 min) and Custom stopwatch. Sessions are validated by backend cryptography to ensure tamper-proof work records.
+      </p>
+    </div>
+
+    <!-- Feature 3: Unbreakable Streaks -->
+    <div class="card">
+      <div style="font-size: 2.2rem; margin-bottom: 1rem;">🔥</div>
+      <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem; color: #fb923c;">Deterministic Streaks</h3>
+      <p style="color: var(--text-secondary); font-size: 0.95rem;">
+        Consecutive day tracking that cannot be manipulated. Maintain your daily grind and watch your flame icon glow brighter as you reach 7, 30, 100, and 500+ days.
+      </p>
+    </div>
+
+    <!-- Feature 4: Tiered Achievements -->
+    <div class="card">
+      <div style="font-size: 2.2rem; margin-bottom: 1rem;">🏆</div>
+      <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--accent-amber);">Tiered Badges</h3>
+      <p style="color: var(--text-secondary); font-size: 0.95rem;">
+        From <em>First Lock-In</em> to <em>500 Day Legend</em> and <em>1000 Hours Locked</em>. Unlocked purely through verifiable milestones.
+      </p>
+    </div>
+
+    <!-- Feature 5: AI Productivity Assistant -->
+    <div class="card">
+      <div style="font-size: 2.2rem; margin-bottom: 1rem;">⚡</div>
+      <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--accent-purple);">AI Productivity Planner</h3>
+      <p style="color: var(--text-secondary); font-size: 0.95rem;">
+        Ask what to work on next. Get instant time-blocked schedules, Pomodoro intervals, and tactical lock-in breakdowns. Works online or offline.
+      </p>
+    </div>
+
+    <!-- Feature 6: Community & Moderation -->
+    <div class="card">
+      <div style="font-size: 2.2rem; margin-bottom: 1rem;">💬</div>
+      <h3 style="font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--accent-crimson);">Community & Chat</h3>
+      <p style="color: var(--text-secondary); font-size: 0.95rem;">
+        Share wins, comment, react with fire & muscle emojis, and chat in the live room protected by server-side abuse filtering.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Motivational Discipline Archetypes Section -->
+<section style="margin-bottom: 5rem;">
+  <div style="text-align: center; margin-bottom: 3rem;">
+    <div style="display: inline-flex; align-items: center; gap: 0.4rem; color: var(--accent-amber); font-weight: 800; font-size: 0.85rem; letter-spacing: 1px; margin-bottom: 0.5rem;">
+      ⚡ MINDSET ARCHETYPES
+    </div>
+    <h2 style="font-size: 2.2rem;">Relentless Execution Mindsets</h2>
+    <p style="color: var(--text-secondary);">Draw inspiration from legendary discipline archetypes.</p>
+  </div>
+
+  <div class="grid grid-3">
+    {% for arch in archetypes[:3] %}
+      <div class="archetype-card" style="background: {{ arch.gradient }};">
+        <div class="archetype-tag" style="background: rgba(0,0,0,0.4); color: {{ arch.accent }};">
+          {{ arch.tag }}
+        </div>
+        <h3 style="font-size: 1.2rem; margin-bottom: 0.25rem;">{{ arch.name }}</h3>
+        <div style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 0.75rem;">{{ arch.archetype }}</div>
+        <p class="archetype-quote">"{{ arch.quote }}"</p>
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Call to Action Banner -->
+<section style="background: linear-gradient(135deg, rgba(0, 229, 255, 0.12) 0%, rgba(139, 92, 246, 0.12) 100%); border: 1px solid var(--border-glow); border-radius: var(--radius-xl); padding: 3.5rem 2rem; text-align: center; margin-bottom: 3rem;">
+  <h2 style="font-size: 2.4rem; margin-bottom: 1rem;" class="gradient-text">Ready to Lock In?</h2>
+  <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto 2rem; font-size: 1.1rem;">
+    Join the community of focused individuals executing their goals every single day.
+  </p>
+  <a href="{{ url_for('auth.register') }}" class="btn btn-primary btn-lg">
+    Create Your Free Account Now
+  </a>
+</section>
+{% endblock %}

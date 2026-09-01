@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Manage Challenges - Admin - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 1.5rem 0;">
+  <div class="admin-header">
+    <div>
+      <h1 style="font-size: 2rem;">🎯 Community Challenge Management</h1>
+      <p style="color: var(--text-secondary); font-size: 0.95rem;">Create new community challenges and track member participation.</p>
+    </div>
+  </div>
+
+  <div class="admin-nav-tabs">
+    <a href="{{ url_for('admin.index') }}" class="admin-tab">Overview</a>
+    <a href="{{ url_for('admin.users_list') }}" class="admin-tab">Users</a>
+    <a href="{{ url_for('admin.reports_list') }}" class="admin-tab">Reports</a>
+    <a href="{{ url_for('admin.filters_management') }}" class="admin-tab">Word Filters</a>
+    <a href="{{ url_for('admin.badges_management') }}" class="admin-tab">Badges</a>
+    <a href="{{ url_for('admin.challenges_management') }}" class="admin-tab active">Challenges</a>
+    <a href="{{ url_for('admin.audit_logs') }}" class="admin-tab">Audit Logs</a>
+  </div>
+
+  <!-- Create Challenge Form -->
+  <div class="card" style="margin-bottom: 2rem; padding: 1.75rem;">
+    <h3 style="font-size: 1.2rem; margin-bottom: 1rem;">+ Create New Challenge</h3>
+    <form method="POST" action="{{ url_for('admin.challenges_management') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="grid grid-3" style="gap: 1rem; margin-bottom: 1rem;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" for="title">Challenge Title</label>
+          <input type="text" id="title" name="title" class="form-control" placeholder="e.g. 14-Day Cyber Sprint" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" for="target_days">Target Streak Days</label>
+          <input type="number" id="target_days" name="target_days" class="form-control" value="14" min="0">
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" for="target_hours">Target Hours</label>
+          <input type="number" step="0.5" id="target_hours" name="target_hours" class="form-control" value="25.0" min="0">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description">Challenge Description</label>
+        <textarea id="description" name="description" class="form-control" rows="2" placeholder="Rules and objectives of the challenge..." required></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <label class="form-check">
+          <input type="checkbox" name="is_active" checked>
+          <span style="font-size: 0.9rem; color: var(--text-primary);">Activate Immediately</span>
+        </label>
+        <button type="submit" class="btn btn-primary">Create Challenge</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Existing Challenges Table -->
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Title</th>
+          <th>Target Days</th>
+          <th>Target Hours</th>
+          <th>Status</th>
+          <th>Participants</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for ch in challenges %}
+          <tr>
+            <td>#{{ ch.id }}</td>
+            <td style="font-weight: 700;">{{ ch.title }}</td>
+            <td>{{ ch.target_days }} Days</td>
+            <td>{{ ch.target_hours }}h</td>
+            <td>
+              {% if ch.is_active %}
+                <span class="status-pill status-active">ACTIVE</span>
+              {% else %}
+                <span class="status-pill status-suspended">INACTIVE</span>
+              {% endif %}
+            </td>
+            <td style="color: var(--accent-cyan); font-weight: 700;">
+              {{ ch.participants|length }}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

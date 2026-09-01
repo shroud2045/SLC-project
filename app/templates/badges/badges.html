@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Achievements & Badges - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 1.5rem 0;">
+  <!-- Header Banner -->
+  <div class="dashboard-hero" style="margin-bottom: 2.5rem;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+      <div>
+        <div style="font-size: 0.9rem; color: var(--accent-amber); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;">
+          SYSTEM ACHIEVEMENTS
+        </div>
+        <h1 style="font-size: 2.2rem; margin-bottom: 0.5rem;">Mastery & Streak Badges</h1>
+        <p style="color: var(--text-secondary); max-width: 580px;">
+          Badges in Shroud's Lockin Crib are deterministic and awarded purely based on verified consistency, time logged, and milestones conquered.
+        </p>
+      </div>
+
+      <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: var(--radius-lg); padding: 1.25rem 2rem; text-align: center;">
+        <div style="font-size: 2.5rem; font-family: var(--font-heading); font-weight: 900; color: #fbbf24;">
+          {{ earned_count }} / {{ total_count }}
+        </div>
+        <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+          BADGES UNLOCKED
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Badges Grouped By Category -->
+  {% for category, badges in badges_by_category.items() %}
+    {% if badges %}
+      <div style="margin-bottom: 3rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-subtle);">
+          <span style="font-size: 1.5rem;">
+            {% if category == 'STREAK' %}🔥
+            {% elif category == 'HOURS' %}⏳
+            {% elif category == 'ACTIVITY' %}⚡
+            {% elif category == 'CHALLENGE' %}🏆
+            {% else %}🌟{% endif %}
+          </span>
+          <h2 style="font-size: 1.5rem;">{{ category }} MILESTONES</h2>
+        </div>
+
+        <div class="grid grid-3">
+          {% for b in badges %}
+            {% set is_earned = b.id in user_badges %}
+            {% set user_badge = user_badges.get(b.id) %}
+            {% set current_val = metrics.get(b.requirement_type, 0) %}
+            {% set progress_pct = [100, (current_val / b.threshold * 100)]|min if b.threshold > 0 else 0 %}
+
+            <div class="card" style="{% if is_earned %}border-color: var(--border-glow); box-shadow: 0 0 15px rgba(0, 229, 255, 0.15);{% else %}opacity: 0.75;{% endif %}">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                <div style="font-size: 2.5rem; {% if not is_earned %}filter: grayscale(100%);{% endif %}">
+                  {{ b.icon }}
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.35rem;">
+                  <span class="badge-pill badge-{{ b.rarity.lower() }}">{{ b.rarity }}</span>
+                  {% if is_earned %}
+                    <span class="badge-pill badge-uncommon" style="font-size: 0.7rem;">UNLOCKED</span>
+                  {% endif %}
+                </div>
+              </div>
+
+              <h3 style="font-size: 1.15rem; margin-bottom: 0.35rem; color: {% if is_earned %}var(--text-primary){% else %}var(--text-secondary){% endif %};">
+                {{ b.name }}
+              </h3>
+              <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem; min-height: 40px;">
+                {{ b.description }}
+              </p>
+
+              {% if is_earned %}
+                <div style="font-size: 0.75rem; color: var(--accent-cyan); font-weight: 600;">
+                  ✓ Unlocked on {{ user_badge.earned_at.strftime('%b %d, %Y') }}
+                </div>
+              {% else %}
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 700; color: var(--text-muted); margin-bottom: 0.35rem;">
+                    <span>Progress</span>
+                    <span>{{ current_val|round(1) }} / {{ b.threshold|round(1) }} ({{ progress_pct|round|int }}%)</span>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.06); height: 6px; border-radius: var(--radius-full); overflow: hidden;">
+                    <div style="background: var(--grad-brand); height: 100%; width: {{ progress_pct }}%;"></div>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endblock %}

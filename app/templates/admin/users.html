@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}User Management - Admin - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 1.5rem 0;">
+  <div class="admin-header">
+    <div>
+      <h1 style="font-size: 2rem;">👥 User Management</h1>
+      <p style="color: var(--text-secondary); font-size: 0.95rem;">Search, manage roles, suspend, or mute member accounts.</p>
+    </div>
+  </div>
+
+  <div class="admin-nav-tabs">
+    <a href="{{ url_for('admin.index') }}" class="admin-tab">Overview</a>
+    <a href="{{ url_for('admin.users_list') }}" class="admin-tab active">Users</a>
+    <a href="{{ url_for('admin.reports_list') }}" class="admin-tab">Reports</a>
+    <a href="{{ url_for('admin.filters_management') }}" class="admin-tab">Word Filters</a>
+    {% if current_user.is_admin() %}
+      <a href="{{ url_for('admin.badges_management') }}" class="admin-tab">Badges</a>
+      <a href="{{ url_for('admin.challenges_management') }}" class="admin-tab">Challenges</a>
+      <a href="{{ url_for('admin.audit_logs') }}" class="admin-tab">Audit Logs</a>
+    {% endif %}
+  </div>
+
+  <!-- Search Box -->
+  <form method="GET" action="{{ url_for('admin.users_list') }}" style="display: flex; gap: 0.75rem; margin-bottom: 1.5rem; max-width: 450px;">
+    <input type="text" name="q" class="form-control" placeholder="Search by username or email..." value="{{ search }}">
+    <button type="submit" class="btn btn-secondary">Search</button>
+  </form>
+
+  <!-- Users Table -->
+  <div class="admin-table-wrap">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>User</th>
+          <th>Email</th>
+          <th>Role</th>
+          <th>Account Status</th>
+          <th>Chat Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+          <tr>
+            <td>#{{ u.id }}</td>
+            <td>
+              <a href="{{ url_for('profile.view_profile', username=u.username) }}" style="font-weight: 700; color: var(--accent-cyan);">
+                {{ u.username }}
+              </a>
+            </td>
+            <td style="color: var(--text-secondary); font-size: 0.85rem;">{{ u.email }}</td>
+            <td>
+              {% if current_user.is_admin() and u.id != current_user.id %}
+                <form action="{{ url_for('admin.change_user_role', user_id=u.id) }}" method="POST" style="display: inline;">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <select name="role" onchange="this.form.submit()" class="form-control" style="padding: 0.2rem 0.4rem; font-size: 0.75rem; width: auto;">
+                    {% for r in roles %}
+                      <option value="{{ r }}" {% if u.role == r %}selected{% endif %}>{{ r }}</option>
+                    {% endfor %}
+                  </select>
+                </form>
+              {% else %}
+                <span class="badge-pill {% if u.role == 'ADMIN' %}badge-mythic{% elif u.role == 'MODERATOR' %}badge-rare{% else %}badge-common{% endif %}">
+                  {{ u.role }}
+                </span>
+              {% endif %}
+            </td>
+            <td>
+              {% if u.is_active %}
+                <span class="status-pill status-active">ACTIVE</span>
+              {% else %}
+                <span class="status-pill status-suspended">SUSPENDED</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if u.is_muted %}
+                <span class="status-pill status-muted">MUTED</span>
+              {% else %}
+                <span style="color: var(--text-muted); font-size: 0.8rem;">Normal</span>
+              {% endif %}
+            </td>
+            <td>
+              <div style="display: flex; gap: 0.5rem;">
+                {% if u.id != current_user.id %}
+                  <!-- Mute/Unmute -->
+                  <form action="{{ url_for('admin.toggle_user_mute', user_id=u.id) }}" method="POST" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-secondary btn-sm" style="font-size: 0.75rem;">
+                      {{ 'Unmute' if u.is_muted else 'Mute' }}
+                    </button>
+                  </form>
+
+                  <!-- Suspend/Restore (Admin only) -->
+                  {% if current_user.is_admin() %}
+                    <form action="{{ url_for('admin.toggle_user_status', user_id=u.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Change status for user {{ u.username }}?');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button type="submit" class="btn {% if u.is_active %}btn-danger{% else %}btn-primary{% endif %} btn-sm" style="font-size: 0.75rem;">
+                        {{ 'Suspend' if u.is_active else 'Restore' }}
+                      </button>
+                    </form>
+                  {% endif %}
+                {% else %}
+                  <span style="color: var(--text-muted); font-size: 0.75rem;">(You)</span>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if pagination.pages > 1 %}
+    <div style="display: flex; justify-content: center; gap: 0.5rem; margin-top: 1.5rem;">
+      {% if pagination.has_prev %}
+        <a href="{{ url_for('admin.users_list', page=pagination.prev_num, q=search) }}" class="btn btn-secondary btn-sm">← Previous</a>
+      {% endif %}
+      <span style="display: flex; align-items: center; padding: 0 1rem; color: var(--text-muted); font-size: 0.9rem;">
+        Page {{ pagination.page }} of {{ pagination.pages }}
+      </span>
+      {% if pagination.has_next %}
+        <a href="{{ url_for('admin.users_list', page=pagination.next_num, q=search) }}" class="btn btn-secondary btn-sm">Next →</a>
+      {% endif %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Record Daily Lock-In - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container container-sm" style="padding: 1.5rem 0;">
+  <div class="card" style="padding: 2.5rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 2rem;">
+      <div style="font-size: 2.2rem;">📝</div>
+      <div>
+        <h1 style="font-size: 1.8rem;">Record Daily Lock-In</h1>
+        <p style="color: var(--text-secondary); font-size: 0.9rem;">Document your grind, accomplishments, and lessons.</p>
+      </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('posts.create') }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="grid grid-2" style="gap: 1rem; margin-bottom: 1.25rem;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" for="post_date">Date</label>
+          <input type="date" id="post_date" name="post_date" class="form-control" value="{{ today }}" max="{{ today }}" required>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" for="hours_worked">Hours Focused</label>
+          <input type="number" step="0.1" min="0" max="24" id="hours_worked" name="hours_worked" class="form-control" placeholder="e.g. 2.5" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="title">Title / Objective</label>
+        <input type="text" id="title" name="title" class="form-control" placeholder="e.g. Networking Lock-In: TCP/IP & Wireshark Labs" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description">Summary Overview</label>
+        <textarea id="description" name="description" class="form-control" rows="3" placeholder="Brief high-level summary of what you did..." required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="worked_on">What I Worked On</label>
+        <textarea id="worked_on" name="worked_on" class="form-control" rows="2" placeholder="Tasks, modules, exercises, or code files..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="completed">What I Completed / Deliverables</label>
+        <textarea id="completed" name="completed" class="form-control" rows="2" placeholder="Labs solved, PRs merged, reps completed..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="learned">Key Lessons / Insights</label>
+        <textarea id="learned" name="learned" class="form-control" rows="2" placeholder="Key technical takeaways or mental breakthroughs..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="tags">Tags (comma-separated)</label>
+        <input type="text" id="tags" name="tags" class="form-control" placeholder="cybersecurity, networking, python, bandit">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="postImagesInput">Attach Proof Screenshots / Images (Optional, max 5)</label>
+        <input type="file" id="postImagesInput" name="images" class="form-control" accept="image/png,image/jpeg,image/webp,image/gif" multiple>
+        <div id="imagePreviewGrid" class="post-images-grid" style="margin-top: 0.75rem;"></div>
+      </div>
+
+      <div class="form-group" style="margin-top: 1.5rem;">
+        <label class="form-label" for="privacySelect">Privacy State</label>
+        <select id="privacySelect" name="privacy" class="form-control">
+          <option value="PRIVATE" selected>🔒 PRIVATE (Only you and moderators can view)</option>
+          <option value="COMMUNITY">🌐 COMMUNITY (Visible to all members in community feed)</option>
+        </select>
+        <div id="privacyNotice" class="form-hint alert alert-warning" style="margin-top: 0.5rem; padding: 0.6rem 0.9rem;">
+          🔒 <strong>PRIVATE:</strong> Only you (and community moderators for safety) can view this entry.
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-flame btn-block" style="padding: 0.85rem; margin-top: 1.5rem;">
+        🔥 Commit & Lock In Progress
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/posts.js') }}"></script>
+{% endblock %}

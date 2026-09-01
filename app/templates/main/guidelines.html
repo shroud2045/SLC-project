@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Community Guidelines - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container container-sm" style="padding: 2rem 0;">
+  <div class="card" style="padding: 2.5rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem;">
+      <span style="font-size: 2rem;">📜</span>
+      <div>
+        <h1 style="font-size: 1.8rem;">Community Guidelines & Safety</h1>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Standards of conduct in Shroud's Lockin Crib</p>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 1.5rem; line-height: 1.7; color: var(--text-secondary);">
+      <div>
+        <h3 style="color: var(--text-primary); margin-bottom: 0.4rem;">1. Focus on Growth & Accountability</h3>
+        <p>This crib exists to help builders, hackers, and students maintain consistency. Respect each other's grind and share genuine progress.</p>
+      </div>
+
+      <div>
+        <h3 style="color: var(--text-primary); margin-bottom: 0.4rem;">2. Zero Tolerance for Harassment & Abuse</h3>
+        <p>Hate speech, threats, harassment, bullying, and targeted attacks are strictly forbidden. Server-side filters actively flag and block prohibited content.</p>
+      </div>
+
+      <div>
+        <h3 style="color: var(--text-primary); margin-bottom: 0.4rem;">3. Minor Safety & Appropriate Content</h3>
+        <p>Explicit, adult, or sexually suggestive material is strictly prohibited. While automated filters mitigate harmful text, human moderators review reports.</p>
+      </div>
+
+      <div>
+        <h3 style="color: var(--text-primary); margin-bottom: 0.4rem;">4. Authentic Logging</h3>
+        <p>Log real hours and authentic accomplishments. Streak manipulation and spamming artificial dates undermines the core spirit of self-mastery.</p>
+      </div>
+
+      <div>
+        <h3 style="color: var(--text-primary); margin-bottom: 0.4rem;">5. Moderation & Enforcement</h3>
+        <p>Violations will result in warnings, chat muting, content deletion, or permanent account suspension at administrator discretion.</p>
+      </div>
+    </div>
+
+    <div style="margin-top: 2.5rem; text-align: center;">
+      <a href="{{ url_for('dashboard.index' if current_user else 'main.index') }}" class="btn btn-secondary">Back</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

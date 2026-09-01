@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Join Shroud's Lockin Crib{% endblock %}
+
+{% block content %}
+<div class="container container-sm" style="padding: 2rem 0;">
+  <div class="card" style="padding: 2.5rem;">
+    <div style="text-align: center; margin-bottom: 2rem;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⚡</div>
+      <h1 style="font-size: 1.8rem; margin-bottom: 0.25rem;">Join the Lockin Crib</h1>
+      <p style="color: var(--text-secondary); font-size: 0.95rem;">Commit to daily discipline. Track your progress. Never break the streak.</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('auth.register') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label" for="username">Username</label>
+        <input type="text" id="username" name="username" class="form-control" placeholder="e.g. cyber_operator" value="{{ username or '' }}" required autofocus>
+        <div class="form-hint">3-30 characters (letters, numbers, dashes, underscores).</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="email">Email Address</label>
+        <input type="email" id="email" name="email" class="form-control" placeholder="you@domain.com" value="{{ email or '' }}" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <input type="password" id="password" name="password" class="form-control" placeholder="••••••••" required>
+        <div class="form-hint">Min 8 characters, at least 1 uppercase, 1 lowercase, 1 number, and 1 special symbol.</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="confirm_password">Confirm Password</label>
+        <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="••••••••" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" style="padding: 0.85rem; margin-top: 1.5rem;">
+        🚀 Begin Day 1
+      </button>
+    </form>
+
+    <div style="text-align: center; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-subtle); font-size: 0.9rem; color: var(--text-secondary);">
+      Already have an account? <a href="{{ url_for('auth.login') }}" style="font-weight: 700; color: var(--accent-cyan);">Login here</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

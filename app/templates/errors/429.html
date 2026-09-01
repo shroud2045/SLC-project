@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}429 Rate Limit Exceeded - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container container-sm text-center" style="padding: 4rem 0;">
+  <div style="font-size: 4rem; margin-bottom: 1rem;">⏳</div>
+  <h1 style="font-size: 2.5rem; margin-bottom: 0.5rem;" class="gradient-flame-text">429 - Rate Limit Exceeded</h1>
+  <p style="color: var(--text-secondary); margin-bottom: 2rem; font-size: 1.1rem;">
+    You are performing actions too quickly. Please take a breath, wait a minute, and try again.
+  </p>
+  <a href="{{ url_for('dashboard.index' if current_user else 'main.index') }}" class="btn btn-flame">
+    Return to Platform
+  </a>
+</div>
+{% endblock %}

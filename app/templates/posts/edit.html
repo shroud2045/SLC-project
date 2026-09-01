@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Edit Post - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container container-sm" style="padding: 1.5rem 0;">
+  <div class="card" style="padding: 2.5rem;">
+    <h1 style="font-size: 1.8rem; margin-bottom: 0.25rem;">Edit Lock-In Post</h1>
+    <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 2rem;">Update details or toggle privacy state.</p>
+
+    <form method="POST" action="{{ url_for('posts.edit_post', post_id=post.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <div class="form-group">
+        <label class="form-label" for="hours_worked">Hours Focused</label>
+        <input type="number" step="0.1" min="0" max="24" id="hours_worked" name="hours_worked" class="form-control" value="{{ post.hours_worked }}" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="title">Title</label>
+        <input type="text" id="title" name="title" class="form-control" value="{{ post.title }}" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description">Summary Overview</label>
+        <textarea id="description" name="description" class="form-control" rows="3" required>{{ post.description }}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="worked_on">What I Worked On</label>
+        <textarea id="worked_on" name="worked_on" class="form-control" rows="2">{{ post.worked_on }}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="completed">What I Completed</label>
+        <textarea id="completed" name="completed" class="form-control" rows="2">{{ post.completed }}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="learned">Key Lessons</label>
+        <textarea id="learned" name="learned" class="form-control" rows="2">{{ post.learned }}</textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="privacy">Privacy State</label>
+        <select id="privacy" name="privacy" class="form-control">
+          <option value="PRIVATE" {% if post.privacy == 'PRIVATE' %}selected{% endif %}>🔒 PRIVATE (Only you and moderators)</option>
+          <option value="COMMUNITY" {% if post.privacy == 'COMMUNITY' %}selected{% endif %}>🌐 COMMUNITY (Public to community feed)</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+        <button type="submit" class="btn btn-primary" style="flex: 1;">Save Changes</button>
+        <a href="{{ url_for('posts.view_post', post_id=post.id) }}" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

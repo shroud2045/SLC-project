@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Admin Control Center - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 1.5rem 0;">
+  <!-- Admin Header & Tabs -->
+  <div class="admin-header">
+    <div>
+      <h1 style="font-size: 2rem;">🛡️ Administrator Control Center</h1>
+      <p style="color: var(--text-secondary); font-size: 0.95rem;">System overview, moderation queues, and governance controls.</p>
+    </div>
+  </div>
+
+  <div class="admin-nav-tabs">
+    <a href="{{ url_for('admin.index') }}" class="admin-tab active">Overview</a>
+    <a href="{{ url_for('admin.users_list') }}" class="admin-tab">Users ({{ total_users }})</a>
+    <a href="{{ url_for('admin.reports_list') }}" class="admin-tab">Reports ({{ pending_reports_count }} pending)</a>
+    <a href="{{ url_for('admin.filters_management') }}" class="admin-tab">Word Filters</a>
+    {% if current_user.is_admin() %}
+      <a href="{{ url_for('admin.badges_management') }}" class="admin-tab">Badges</a>
+      <a href="{{ url_for('admin.challenges_management') }}" class="admin-tab">Challenges</a>
+      <a href="{{ url_for('admin.audit_logs') }}" class="admin-tab">Audit Logs</a>
+    {% endif %}
+  </div>
+
+  <!-- Stat Widgets Grid -->
+  <div class="grid grid-4" style="margin-bottom: 2rem;">
+    <div class="stat-widget">
+      <div class="stat-icon" style="color: var(--accent-cyan);">👥</div>
+      <div>
+        <div class="stat-value">{{ total_users }}</div>
+        <div class="stat-label">Total Users</div>
+      </div>
+    </div>
+    <div class="stat-widget">
+      <div class="stat-icon" style="color: var(--accent-emerald);">📝</div>
+      <div>
+        <div class="stat-value">{{ total_posts }}</div>
+        <div class="stat-label">Total Posts</div>
+      </div>
+    </div>
+    <div class="stat-widget">
+      <div class="stat-icon" style="color: var(--accent-purple);">⏱️</div>
+      <div>
+        <div class="stat-value">{{ total_timer_sessions }}</div>
+        <div class="stat-label">Timer Sessions</div>
+      </div>
+    </div>
+    <div class="stat-widget">
+      <div class="stat-icon" style="color: var(--accent-crimson);">🚩</div>
+      <div>
+        <div class="stat-value">{{ pending_reports_count }}</div>
+        <div class="stat-label">Pending Reports</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="align-items: start;">
+    <!-- Pending Reports Queue -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">🚩 Pending Moderation Queue</h3>
+        <a href="{{ url_for('admin.reports_list') }}" class="text-cyan" style="font-size: 0.85rem; font-weight: 600;">View All</a>
+      </div>
+
+      {% if recent_reports %}
+        <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+          {% for r in recent_reports %}
+            <div style="padding: 0.85rem; background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 0.25rem;">
+                <span class="status-pill status-pending">{{ r.target_type }} #{{ r.target_id }}</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">{{ r.created_at.strftime('%b %d, %H:%M') }}</span>
+              </div>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.25rem;">{{ r.reason }}</p>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-size: 0.9rem;">
+          ✓ All clean. No pending user reports.
+        </p>
+      {% endif %}
+    </div>
+
+    <!-- Recent Audit Logs -->
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">🛡️ Recent Audit Logs</h3>
+        {% if current_user.is_admin() %}
+          <a href="{{ url_for('admin.audit_logs') }}" class="text-cyan" style="font-size: 0.85rem; font-weight: 600;">Full Log</a>
+        {% endif %}
+      </div>
+
+      {% if recent_audit_logs %}
+        <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+          {% for log in recent_audit_logs %}
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border-subtle); font-size: 0.85rem;">
+              <div>
+                <span style="font-weight: 700; color: var(--accent-cyan);">{{ log.action }}</span>
+                <span style="color: var(--text-muted); font-size: 0.75rem; margin-left: 0.5rem;">by Admin #{{ log.admin_id or 'System' }}</span>
+              </div>
+              <span style="color: var(--text-muted); font-size: 0.75rem;">{{ log.timestamp.strftime('%H:%M:%S') }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p style="color: var(--text-muted); text-align: center; padding: 2rem 0; font-size: 0.9rem;">No audit logs recorded yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

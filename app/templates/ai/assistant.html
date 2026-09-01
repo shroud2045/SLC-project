@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}AI Productivity Assistant - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container container-sm" style="padding: 1.5rem 0;">
+  <!-- Header -->
+  <div style="text-align: center; margin-bottom: 2rem;">
+    <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">⚡</div>
+    <h1 style="font-size: 2.2rem; margin-bottom: 0.25rem;">AI Productivity Strategist</h1>
+    <p style="color: var(--text-secondary); font-size: 0.95rem;">
+      Turn vague intentions into time-blocked, disciplined lock-in blueprints.
+    </p>
+  </div>
+
+  <!-- Prompt Card -->
+  <div class="card" style="padding: 2rem; margin-bottom: 2rem;">
+    <form id="aiPromptForm">
+      <div class="form-group">
+        <label class="form-label" for="aiPromptInput">What is your objective & how much time do you have?</label>
+        <textarea id="aiPromptInput" class="form-control" rows="3" placeholder="e.g. I have 3 hours tonight and need to study networking and do packet labs..." required></textarea>
+      </div>
+
+      <!-- Quick Scenario Chips -->
+      <div style="margin-bottom: 1.5rem;">
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; font-weight: 600;">QUICK SCENARIOS:</div>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button type="button" class="badge-pill badge-rare ai-chip" data-prompt="I have 2.5 hours to study TCP/IP networking protocols and do Wireshark labs." style="cursor: pointer; border: none;">
+            🌐 2.5h Networking & Wireshark
+          </button>
+          <button type="button" class="badge-pill badge-uncommon ai-chip" data-prompt="I have 3 hours for deep Python and Flask backend development." style="cursor: pointer; border: none;">
+            🐍 3h Python & Flask Sprint
+          </button>
+          <button type="button" class="badge-pill badge-mythic ai-chip" data-prompt="I have 90 minutes for OverTheWire Bandit linux privilege escalation labs." style="cursor: pointer; border: none;">
+            🛡️ 90m Bandit Linux CTF
+          </button>
+          <button type="button" class="badge-pill badge-legendary ai-chip" data-prompt="I have 1 hour for heavy strength training and core fitness." style="cursor: pointer; border: none;">
+            💪 1h Heavy Gym Protocol
+          </button>
+        </div>
+      </div>
+
+      <button type="submit" id="btnAiSubmit" class="btn btn-primary btn-block" style="padding: 0.85rem;">
+        ⚡ Generate Lock-In Plan
+      </button>
+    </form>
+  </div>
+
+  <!-- Dynamic Output Plan Card -->
+  <div id="aiPlanOutput" class="card" style="padding: 2rem; display: none;">
+    <!-- Rendered via ai_assistant.js -->
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/ai_assistant.js') }}"></script>
+{% endblock %}

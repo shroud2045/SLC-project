@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Productivity Timer - {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 1.5rem 0;">
+  <!-- Timer Title -->
+  <div style="text-align: center; margin-bottom: 2rem;">
+    <h1 style="font-size: 2.2rem; margin-bottom: 0.25rem;">⏱️ Lock-In Productivity Timer</h1>
+    <p style="color: var(--text-secondary); font-size: 0.95rem;">Track deep work intervals with verifiable server-side validation.</p>
+  </div>
+
+  <!-- Main Timer Card -->
+  <div class="timer-card">
+    <!-- Mode Selection Tabs -->
+    <div class="timer-mode-tabs">
+      <button type="button" class="timer-mode-btn active" data-mode="POMODORO">Pomodoro (25m)</button>
+      <button type="button" class="timer-mode-btn" data-mode="CUSTOM">Custom Duration</button>
+      <button type="button" class="timer-mode-btn" data-mode="STOPWATCH">Stopwatch</button>
+    </div>
+
+    <!-- Category & Notes -->
+    <div style="display: flex; gap: 0.75rem; justify-content: center; margin-bottom: 1.5rem; flex-wrap: wrap;">
+      <select id="timerCategorySelect" class="form-control" style="width: auto; min-width: 180px; padding: 0.5rem 1rem;">
+        {% for cat in categories %}
+          <option value="{{ cat }}">{{ cat }}</option>
+        {% endfor %}
+      </select>
+      <input type="text" id="timerNotesInput" class="form-control" placeholder="Session focus / objective..." style="max-width: 260px; padding: 0.5rem 1rem;">
+    </div>
+
+    <!-- Circular Timer Visualization -->
+    <div class="timer-circle-wrap">
+      <svg class="timer-svg" viewBox="0 0 280 280">
+        <defs>
+          <linearGradient id="timerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#00e5ff" />
+            <stop offset="50%" stop-color="#3b82f6" />
+            <stop offset="100%" stop-color="#8b5cf6" />
+          </linearGradient>
+        </defs>
+        <!-- Background Track -->
+        <circle class="timer-circle-bg" cx="140" cy="140" r="120"></circle>
+        <!-- Dynamic Progress Track -->
+        <circle id="timerCircleProgress" class="timer-circle-progress" cx="140" cy="140" r="120"></circle>
+      </svg>
+      <div class="timer-display-inner">
+        <div id="timerDigits" class="timer-digits">25:00</div>
+        <div id="timerStatus" class="timer-status-label">READY TO LOCK IN</div>
+      </div>
+    </div>
+
+    <!-- Control Buttons -->
+    <div class="timer-controls">
+      <button type="button" id="btnTimerStart" class="btn btn-primary btn-lg" style="min-width: 160px;">
+        ▶ Start Lock-In
+      </button>
+      <button type="button" id="btnTimerPause" class="btn btn-secondary btn-lg" style="display: none; min-width: 160px;">
+        ⏸ Pause
+      </button>
+      <button type="button" id="btnTimerSave" class="btn btn-flame btn-lg" disabled>
+        💾 Stop & Save
+      </button>
+      <button type="button" id="btnTimerReset" class="btn btn-secondary">
+        🔄 Reset
+      </button>
+    </div>
+  </div>
+
+  <!-- Time Stats Row -->
+  <div class="grid grid-3" style="max-width: 900px; margin: 0 auto 2.5rem;">
+    <div class="stat-widget">
+      <div class="stat-icon" style="color: var(--accent-cyan);">☀️</div>
+      <div>
+        <div class="stat-value">{{ (daily_mins / 60.0)|round(1) }}h</div>
+        <div class="stat-label">Today's Timer Total</div>
+      </div>
+    </div>
+
+    <div class="stat-widget">
+      <div class="stat-icon" style="color: var(--accent-emerald);">📅</div>
+      <div>
+        <div class="stat-value">{{ (weekly_mins / 60.0)|round(1) }}h</div>
+        <div class="stat-label">This Week's Total</div>
+      </div>
+    </div>
+
+    <div class="stat-widget">
+      <div class="stat-icon" style="color: var(--accent-amber);">⏳</div>
+      <div>
+        <div class="stat-value">{{ (lifetime_mins / 60.0)|round(1) }}h</div>
+        <div class="stat-label">Lifetime Clocked</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Sessions Table -->
+  <div class="card" style="max-width: 900px; margin: 0 auto;">
+    <div class="card-header">
+      <h3 class="card-title">📜 Recent Focus Sessions</h3>
+    </div>
+
+    {% if recent_sessions %}
+      <div class="admin-table-wrap" style="margin-bottom: 0;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Category</th>
+              <th>Mode</th>
+              <th>Duration</th>
+              <th>Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in recent_sessions %}
+              <tr>
+                <td>{{ s.start_time.strftime('%b %d, %H:%M') }}</td>
+                <td><span class="badge-pill badge-rare">{{ s.category }}</span></td>
+                <td>{{ s.mode }}</td>
+                <td style="font-family: var(--font-mono); font-weight: 700; color: var(--accent-cyan);">{{ s.formatted_duration }}</td>
+                <td style="color: var(--text-muted); font-size: 0.85rem;">{{ s.notes or '-' }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p style="color: var(--text-muted); text-align: center; padding: 2rem 0;">No sessions saved yet. Clock your first session above!</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/timer.js') }}"></script>
+{% endblock %}
