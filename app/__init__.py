@@ -1,7 +1,7 @@
 import os
 from datetime import datetime, timezone
 from flask import Flask
-from app.config import config_by_name
+from app.config import config_by_name, ProductionConfig
 from app.extensions import db, migrate, csrf
 from app.utils.security import apply_security_headers
 from app.utils.decorators import get_current_user
@@ -14,7 +14,13 @@ def create_app(config_name: str = None) -> Flask:
         config_name = os.environ.get('FLASK_ENV', 'development')
 
     app = Flask(__name__)
-    app.config.from_object(config_by_name.get(config_name, config_by_name['default']))
+    cfg_obj = config_by_name.get(config_name, config_by_name['default'])
+    app.config.from_object(cfg_obj)
+
+    # ProductionConfig defers DATABASE_URL validation to runtime so the module
+    # can be safely imported in development/testing environments.  Resolve it now.
+    if cfg_obj is ProductionConfig and 'SQLALCHEMY_DATABASE_URI' not in app.config:
+        app.config['SQLALCHEMY_DATABASE_URI'] = ProductionConfig.get_sqlalchemy_uri()
 
     # Ensure uploads and instance directories exist
     os.makedirs(app.config.get('UPLOAD_FOLDER', os.path.join(app.root_path, '..', 'uploads')), exist_ok=True)

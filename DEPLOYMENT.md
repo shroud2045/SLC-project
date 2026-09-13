@@ -1,104 +1,243 @@
-# Deployment Guide — Shroud's Lockin Crib
+# Deployment Guide — Shroud's Lockin Crib (SLC)
 
-This guide covers deploying SLC to a Linux VPS (Ubuntu 22.04+) with Gunicorn + NGINX, and also includes a quick Render.com / Railway cloud option.
+This guide covers deploying SLC to **Render.com** with a persistent PostgreSQL
+database, and also includes a VPS/NGINX option for self-hosted deployments.
 
 ---
 
-## Option A: VPS Deployment (Ubuntu + NGINX + Gunicorn)
+## Production Architecture
 
-### 1. Server Setup
-
-```bash
-# Update packages
-sudo apt update && sudo apt upgrade -y
-
-# Install required system packages
-sudo apt install -y python3.12 python3.12-venv python3-pip nginx git
-
-# Create a dedicated service user (no root privileges)
-sudo useradd -m -s /bin/bash slc
-sudo su - slc
+```
+Browser → HTTPS → Render Web Service (Gunicorn + Flask)
+                         ↓
+              Render PostgreSQL Database
+              (persistent, survives restarts)
 ```
 
-### 2. Clone and Configure
+- **Application server**: Gunicorn (multi-worker)
+- **Database**: Render PostgreSQL (external, persistent)
+- **Migrations**: Flask-Migrate / Alembic (`flask --app manage.py db upgrade`)
+- **Static data**: Seeded idempotently on first deploy
 
-```bash
-# As the slc user
-git clone https://github.com/shroud2045/SLC-project.git
-cd SLC-project
+---
 
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
+## Option A: Render.com (Recommended)
 
-# Install dependencies
-pip install -r requirements.txt
+### Step 1 — Create a Render PostgreSQL Database
 
-# Configure environment
-cp .env.example .env
-nano .env  # Set SECRET_KEY, DATABASE_URL, etc.
-```
+1. Go to [render.com](https://render.com) → **New** → **PostgreSQL**
+2. Give it a name (e.g. `slcdb`) and choose a region
+3. Click **Create Database**
+4. On the database info page, copy the **Internal Database URL**
+   - It looks like: `postgresql://user:password@dpg-xxxx.oregon-postgres.render.com/slcdb`
+   - Render may show it as `postgres://...` — the app converts this automatically
 
-**Generate a production SECRET_KEY:**
+### Step 2 — Create a Render Web Service
+
+1. Go to **New** → **Web Service** → Connect your GitHub repo
+2. Configure:
+   - **Runtime**: Python 3
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `gunicorn run:app`
+
+### Step 3 — Set Environment Variables
+
+In the Render web service → **Environment** tab, add:
+
+| Variable | Value |
+|---|---|
+| `FLASK_ENV` | `production` |
+| `FLASK_DEBUG` | `False` |
+| `SECRET_KEY` | `<64-char hex — see below>` |
+| `DATABASE_URL` | `<Internal Database URL from Step 1>` |
+| `SESSION_COOKIE_SECURE` | `True` |
+| `UPLOAD_FOLDER` | `uploads` |
+| `MAX_CONTENT_LENGTH` | `16777216` |
+| `AI_PROVIDER` | `heuristic` |
+
+**Generate SECRET_KEY** (run locally):
 ```bash
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-### 3. Database Initialisation
+> ⚠️ **NEVER** use the default `SECRET_KEY` from `.env` in production.
 
-**SQLite (simple, single-server):**
+### Step 4 — Deploy
+
+Push to GitHub. Render auto-deploys on push.
+
+### Step 5 — Run Database Migration (First Deploy Only)
+
+In the Render web service → **Shell** tab:
+
 ```bash
-python manage.py init-db
-python manage.py create-admin
+flask --app manage.py db upgrade
 ```
 
-**PostgreSQL (recommended for production):**
-```bash
-# Install PostgreSQL
-sudo apt install -y postgresql postgresql-contrib
+This creates all tables in PostgreSQL. **Never use `db.create_all()` or `db.drop_all()`.**
 
-# Create database and user
+### Step 6 — Seed Static Data
+
+```bash
+flask --app manage.py seed
+```
+
+Seeds achievement badges and moderation filter rules. Safe to run multiple times.
+
+### Step 7 — (Optional) Create Admin Account
+
+```bash
+flask --app manage.py create-admin
+```
+
+### Step 8 — Verify Database
+
+```bash
+flask --app manage.py db-check
+```
+
+Expected output:
+```
+=== SLC Database Health Check ===
+  Dialect  : postgresql
+  Host     : dpg-xxxx.oregon-postgres.render.com
+  Database : slcdb
+  Status   : CONNECTED ✓
+```
+
+---
+
+## Final Render Deployment Summary
+
+| Setting | Value |
+|---|---|
+| **Build Command** | `pip install -r requirements.txt` |
+| **Start Command** | `gunicorn run:app` |
+| **Migration Command** | `flask --app manage.py db upgrade` |
+| **Seed Command** | `flask --app manage.py seed` |
+| **Health Check** | `flask --app manage.py db-check` |
+
+---
+
+## Updating the Application
+
+Every subsequent deployment runs automatically via git push. After pushing:
+
+```bash
+# Render runs this automatically on each deploy:
+pip install -r requirements.txt
+
+# If you added new models, run in Render Shell:
+flask --app manage.py db upgrade
+```
+
+**`db upgrade` is always safe to re-run** — it's idempotent. It only applies
+migrations not yet applied to the database.
+
+---
+
+## Database Persistence Guarantees
+
+| Event | Data preserved? |
+|---|---|
+| Application restart | ✅ Yes — PostgreSQL is external |
+| New Render deployment | ✅ Yes — DB is not wiped |
+| Server crash | ✅ Yes — PostgreSQL persists independently |
+| New user registers | ✅ Yes — written to PostgreSQL immediately |
+| User earns badge | ✅ Yes — stored in `user_badges` table |
+| Timer session completed | ✅ Yes — stored in `timer_sessions` table |
+
+---
+
+## Environment Variables Reference
+
+```
+# Required
+SECRET_KEY=<64-char-random-hex>
+DATABASE_URL=postgresql://user:pass@host/dbname
+FLASK_ENV=production
+
+# Optional — defaults shown
+FLASK_DEBUG=False
+MAX_CONTENT_LENGTH=16777216
+ALLOWED_EXTENSIONS=png,jpg,jpeg,webp,gif
+UPLOAD_FOLDER=uploads
+SESSION_COOKIE_SECURE=True
+SESSION_COOKIE_SAMESITE=Lax
+PERMANENT_SESSION_LIFETIME_DAYS=7
+RATE_LIMIT_LOGIN=5/minute
+RATE_LIMIT_REGISTER=3/minute
+RATE_LIMIT_CHAT=1/second
+RATE_LIMIT_AI=10/minute
+AI_PROVIDER=heuristic
+OPENAI_API_KEY=         # optional: 'openai' provider
+GEMINI_API_KEY=         # optional: 'gemini' provider
+```
+
+---
+
+## Option B: VPS/NGINX (Self-Hosted)
+
+### 1. System Setup
+
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y python3.12 python3.12-venv postgresql postgresql-contrib nginx git
+
+# Create service user
+sudo useradd -m -s /bin/bash slc
+sudo su - slc
+```
+
+### 2. PostgreSQL Setup
+
+```bash
 sudo -u postgres psql -c "CREATE USER slcuser WITH PASSWORD 'strongpassword';"
 sudo -u postgres psql -c "CREATE DATABASE slcdb OWNER slcuser;"
-
-# Set DATABASE_URL in .env
-# DATABASE_URL=postgresql://slcuser:strongpassword@localhost/slcdb
-
-python manage.py init-db
-python manage.py create-admin
 ```
 
-### 4. Gunicorn Setup
+### 3. Application Setup
 
 ```bash
-# Test Gunicorn manually first
-gunicorn --bind 127.0.0.1:5000 "app:create_app()" --workers 3
+git clone https://github.com/shroud2045/SLC-project.git
+cd SLC-project
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.render .env
+nano .env  # Set SECRET_KEY, DATABASE_URL=postgresql://slcuser:strongpassword@localhost/slcdb
 ```
 
-**Create systemd service file:**
+### 4. Database Initialization
 
 ```bash
-sudo nano /etc/systemd/system/slc.service
+flask --app manage.py db upgrade
+flask --app manage.py seed
+flask --app manage.py create-admin
+flask --app manage.py db-check   # verify
 ```
+
+### 5. Gunicorn systemd Service
 
 ```ini
+# /etc/systemd/system/slc.service
 [Unit]
 Description=Shroud's Lockin Crib — Flask Application
-After=network.target
+After=network.target postgresql.service
 
 [Service]
 User=slc
 Group=www-data
 WorkingDirectory=/home/slc/SLC-project
 Environment="PATH=/home/slc/SLC-project/venv/bin"
+EnvironmentFile=/home/slc/SLC-project/.env
 ExecStart=/home/slc/SLC-project/venv/bin/gunicorn \
     --bind 127.0.0.1:5000 \
     --workers 3 \
     --timeout 60 \
-    --log-level info \
-    --access-logfile /var/log/slc/access.log \
-    --error-logfile /var/log/slc/error.log \
-    "app:create_app()"
+    run:app
 Restart=always
 
 [Install]
@@ -106,154 +245,73 @@ WantedBy=multi-user.target
 ```
 
 ```bash
-# Create log directory
-sudo mkdir -p /var/log/slc
-sudo chown slc:www-data /var/log/slc
-
-# Enable and start service
 sudo systemctl daemon-reload
 sudo systemctl enable slc
 sudo systemctl start slc
-sudo systemctl status slc  # Should show "active (running)"
 ```
 
-### 5. NGINX Reverse Proxy
-
-```bash
-sudo nano /etc/nginx/sites-available/slc
-```
+### 6. NGINX Reverse Proxy
 
 ```nginx
 server {
     listen 80;
-    server_name yourdomain.com www.yourdomain.com;
-
-    # Redirect HTTP to HTTPS
+    server_name yourdomain.com;
     return 301 https://$server_name$request_uri;
 }
 
 server {
     listen 443 ssl http2;
-    server_name yourdomain.com www.yourdomain.com;
+    server_name yourdomain.com;
 
-    # SSL Certificates (managed by Certbot)
     ssl_certificate     /etc/letsencrypt/live/yourdomain.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/yourdomain.com/privkey.pem;
     ssl_protocols       TLSv1.2 TLSv1.3;
-    ssl_ciphers         HIGH:!aNULL:!MD5;
 
-    # Upload size limit (matches MAX_CONTENT_LENGTH)
-    client_max_body_size 5M;
-
-    # Security headers (complement Flask's headers)
+    client_max_body_size 16M;
     add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
-    # Proxy to Gunicorn
     location / {
         proxy_pass         http://127.0.0.1:5000;
         proxy_set_header   Host $host;
         proxy_set_header   X-Real-IP $remote_addr;
         proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header   X-Forwarded-Proto $scheme;
-        proxy_read_timeout 60s;
     }
 
-    # Serve static files directly via NGINX (faster than through Flask)
     location /static/ {
         alias /home/slc/SLC-project/app/static/;
         expires 7d;
-        add_header Cache-Control "public, immutable";
-    }
-
-    # Block uploads directory from direct access
-    location /uploads/ {
-        deny all;
     }
 }
 ```
 
-```bash
-# Enable the site
-sudo ln -s /etc/nginx/sites-available/slc /etc/nginx/sites-enabled/
-sudo nginx -t  # Test config
-sudo systemctl restart nginx
-```
-
-### 6. HTTPS with Let's Encrypt
+### 7. HTTPS with Let's Encrypt
 
 ```bash
 sudo apt install -y certbot python3-certbot-nginx
-sudo certbot --nginx -d yourdomain.com -d www.yourdomain.com
-
-# Auto-renewal (runs twice daily)
-sudo systemctl enable certbot.timer
-```
-
-### 7. Uploads Directory Permissions
-
-```bash
-# Uploads must be writable by the slc service user
-sudo chown -R slc:www-data /home/slc/SLC-project/uploads/
-sudo chmod 750 /home/slc/SLC-project/uploads/
+sudo certbot --nginx -d yourdomain.com
 ```
 
 ---
 
-## Option B: Cloud Deployment (Render.com)
-
-1. Push your repo to GitHub (`github.com/shroud2045/SLC-project`)
-2. Go to [render.com](https://render.com) → New Web Service → Connect GitHub repo
-3. Set the following in Render's dashboard:
-   - **Build command:** `pip install -r requirements.txt`
-   - **Start command:** `gunicorn "app:create_app()" --bind 0.0.0.0:$PORT`
-   - **Environment variables:** Add all `.env` values in the Render "Environment" tab
-4. Add a **Render PostgreSQL** database and set `DATABASE_URL` to the connection string
-5. Run `python manage.py init-db` once via Render's shell tab
-
----
-
-## Production Environment Variables Checklist
+## Management Commands Reference
 
 ```bash
-SECRET_KEY=<64-char-random-hex>      # REQUIRED — must be unique and secret
-DATABASE_URL=postgresql://...         # REQUIRED — use PostgreSQL in prod
-FLASK_ENV=production
-FLASK_DEBUG=0
-MAX_CONTENT_LENGTH=5242880            # 5 MB
-UPLOAD_FOLDER=/home/slc/SLC-project/uploads
-OPENAI_API_KEY=sk-...                 # Optional — for AI study plans
-GEMINI_API_KEY=...                    # Optional — for AI study plans
-```
+# Check DB connectivity (never prints passwords)
+flask --app manage.py db-check
 
----
+# Apply all pending migrations
+flask --app manage.py db upgrade
 
-## Updating the Application
+# Seed static data (badges, filters) — idempotent
+flask --app manage.py seed
 
-```bash
-# As the slc user
-cd ~/SLC-project
-git pull origin main
-source venv/bin/activate
-pip install -r requirements.txt
+# First-deploy: upgrade + seed in one step
+flask --app manage.py init-db
 
-# Apply any new database migrations
-flask db upgrade  # if using Flask-Migrate
+# Create admin account interactively
+flask --app manage.py create-admin
 
-# Restart the service
-sudo systemctl restart slc
-```
-
----
-
-## Monitoring Logs
-
-```bash
-# Gunicorn error logs
-sudo tail -f /var/log/slc/error.log
-
-# Access logs
-sudo tail -f /var/log/slc/access.log
-
-# systemd journal
-sudo journalctl -u slc -f
+# Generate a new migration after model changes
+flask --app manage.py db migrate -m "description of change"
 ```
