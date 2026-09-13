@@ -1,4 +1,0 @@
-{
-  "framework": "flask",
-  "entrypoint": "run.py"
-}
