@@ -1,7 +1,13 @@
 import os
 from app import create_app
 
-app = create_app(os.environ.get('FLASK_ENV', 'development'))
+flask_env = os.environ.get('FLASK_ENV')
+if not flask_env and os.environ.get('VERCEL'):
+    flask_env = 'production'
+if not flask_env:
+    flask_env = 'development'
+
+app = create_app(flask_env)
 
 if __name__ == '__main__':
     host = os.environ.get('HOST', '0.0.0.0')

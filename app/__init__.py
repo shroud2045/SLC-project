@@ -11,20 +11,48 @@ from app.services.streak_service import StreakService
 def create_app(config_name: str = None) -> Flask:
     """Application factory for Shroud's Lockin Crib (SLC)."""
     if config_name is None:
-        config_name = os.environ.get('FLASK_ENV', 'development')
+        config_name = os.environ.get('FLASK_ENV')
+        if not config_name and os.environ.get('VERCEL'):
+            config_name = 'production'
+        if not config_name:
+            config_name = 'development'
+    elif config_name == 'development' and os.environ.get('VERCEL'):
+        config_name = 'production'
 
     app = Flask(__name__)
     cfg_obj = config_by_name.get(config_name, config_by_name['default'])
     app.config.from_object(cfg_obj)
 
-    # ProductionConfig defers DATABASE_URL validation to runtime so the module
-    # can be safely imported in development/testing environments.  Resolve it now.
-    if cfg_obj is ProductionConfig and 'SQLALCHEMY_DATABASE_URI' not in app.config:
-        app.config['SQLALCHEMY_DATABASE_URI'] = ProductionConfig.get_sqlalchemy_uri()
+    # Resolve database URI lazily if provided via get_sqlalchemy_uri()
+    if not app.config.get('SQLALCHEMY_DATABASE_URI'):
+        if hasattr(cfg_obj, 'get_sqlalchemy_uri'):
+            app.config['SQLALCHEMY_DATABASE_URI'] = cfg_obj.get_sqlalchemy_uri()
 
-    # Ensure uploads and instance directories exist
-    os.makedirs(app.config.get('UPLOAD_FOLDER', os.path.join(app.root_path, '..', 'uploads')), exist_ok=True)
-    os.makedirs(os.path.join(app.root_path, '..', 'instance'), exist_ok=True)
+    # On Vercel, serverless containers have a read-only filesystem except /tmp
+    if os.environ.get('VERCEL'):
+        vercel_upload = os.environ.get('UPLOAD_FOLDER', '/tmp/uploads')
+        if not os.path.isabs(vercel_upload):
+            vercel_upload = os.path.join('/tmp', vercel_upload)
+        app.config['UPLOAD_FOLDER'] = vercel_upload
+
+    # Ensure upload folder exists if writable
+    upload_folder = app.config.get('UPLOAD_FOLDER')
+    if upload_folder:
+        try:
+            os.makedirs(upload_folder, exist_ok=True)
+        except OSError:
+            pass
+
+    # Ensure instance directory exists ONLY when using a local file-based SQLite database
+    db_uri = app.config.get('SQLALCHEMY_DATABASE_URI', '')
+    if db_uri.startswith('sqlite:///') and ':memory:' not in db_uri:
+        sqlite_path = db_uri.replace('sqlite:///', '', 1)
+        instance_dir = os.path.dirname(sqlite_path)
+        if instance_dir:
+            try:
+                os.makedirs(instance_dir, exist_ok=True)
+            except OSError:
+                pass
 
     # Initialize extensions
     db.init_app(app)

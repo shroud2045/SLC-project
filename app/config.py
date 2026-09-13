@@ -6,38 +6,51 @@ from dotenv import load_dotenv
 basedir = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 load_dotenv(os.path.join(basedir, '.env'))
 
-# Ensure instance and uploads directories exist
-os.makedirs(os.path.join(basedir, 'instance'), exist_ok=True)
-os.makedirs(os.path.join(basedir, 'uploads'), exist_ok=True)
-
 
 def _resolve_db_url(raw, allow_sqlite=False):
     """
-    Resolve the database URL, rewriting Render's legacy postgres:// scheme
-    to the SQLAlchemy-compatible postgresql:// scheme.
+    Resolve and normalize the database URL.
+
+    - Normalizes postgres://, postgresql://, and postgresql+psycopg2://
+      to postgresql+psycopg:// for the psycopg v3 driver.
+    - Production and Vercel environments require PostgreSQL and forbid SQLite.
+    - Local development (non-Vercel) can fall back to local SQLite when allow_sqlite=True.
 
     Args:
         raw: Raw DATABASE_URL string (may be None or empty).
-        allow_sqlite: If True, a missing/empty URL falls back to local SQLite.
-                      If False (production), a missing or SQLite URL raises ValueError
-                      at the time the config is *used*, not at import time.
+        allow_sqlite: If True, a missing/empty URL falls back to local SQLite (unless on Vercel).
+                      If False (production), a missing or SQLite URL raises ValueError.
     """
+    is_vercel = bool(os.environ.get('VERCEL'))
+
+    if isinstance(raw, str):
+        raw = raw.strip()
+
     if not raw:
-        if allow_sqlite:
+        if allow_sqlite and not is_vercel:
             return "sqlite:///" + os.path.join(basedir, 'instance', 'slc.sqlite3')
+        if is_vercel:
+            raise ValueError(
+                "DATABASE_URL is not set. "
+                "Vercel deployment requires a PostgreSQL DATABASE_URL environment variable."
+            )
         raise ValueError(
             "DATABASE_URL is not set. "
             "Production requires a PostgreSQL DATABASE_URL environment variable."
         )
 
-    # Render historically provides postgres:// — SQLAlchemy requires postgresql://
+    # Normalize PostgreSQL URL schemes for psycopg v3 driver
     if raw.startswith('postgres://'):
-        raw = raw.replace('postgres://', 'postgresql://', 1)
+        raw = 'postgresql+psycopg://' + raw[len('postgres://'):]
+    elif raw.startswith('postgresql+psycopg2://'):
+        raw = 'postgresql+psycopg://' + raw[len('postgresql+psycopg2://'):]
+    elif raw.startswith('postgresql://'):
+        raw = 'postgresql+psycopg://' + raw[len('postgresql://'):]
 
-    if not allow_sqlite and raw.startswith('sqlite://'):
+    if (not allow_sqlite or is_vercel) and raw.startswith('sqlite://'):
         raise ValueError(
             "DATABASE_URL is set to a SQLite path. "
-            "Production must use a PostgreSQL DATABASE_URL. "
+            "Production/Vercel must use a PostgreSQL DATABASE_URL. "
             "Set DATABASE_URL to your Render PostgreSQL connection string."
         )
 
@@ -51,7 +64,14 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # File upload configurations
-    UPLOAD_FOLDER = os.path.join(basedir, os.environ.get('UPLOAD_FOLDER', 'uploads'))
+    # On Vercel / serverless functions, the container filesystem is read-only except /tmp
+    if os.environ.get('UPLOAD_FOLDER'):
+        UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER')
+    elif os.environ.get('VERCEL'):
+        UPLOAD_FOLDER = '/tmp/uploads'
+    else:
+        UPLOAD_FOLDER = os.path.join(basedir, 'uploads')
+
     MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))  # 16 MB max
     ALLOWED_EXTENSIONS = set(os.environ.get('ALLOWED_EXTENSIONS', 'png,jpg,jpeg,webp,gif').split(','))
 
@@ -82,8 +102,11 @@ class DevelopmentConfig(Config):
     DEBUG = True
     TESTING = False
     SESSION_COOKIE_SECURE = False
-    # Fall back to local SQLite when DATABASE_URL is absent in development
-    SQLALCHEMY_DATABASE_URI = _resolve_db_url(os.environ.get('DATABASE_URL'), allow_sqlite=True)
+
+    @classmethod
+    def get_sqlalchemy_uri(cls):
+        """Return the development database URI."""
+        return _resolve_db_url(os.environ.get('DATABASE_URL'), allow_sqlite=True)
 
 
 class TestingConfig(Config):

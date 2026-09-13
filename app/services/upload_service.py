@@ -95,8 +95,10 @@ class UploadService:
 
             return secure_filename, None
 
-        except Exception as e:
-            return None, f"Image processing failed: Invalid or corrupt image data."
+        except OSError:
+            return None, "Storage error: Unable to save upload to filesystem."
+        except Exception:
+            return None, "Image processing failed: Invalid or corrupt image data."
 
     @classmethod
     def delete_image(cls, filename: str) -> bool:
