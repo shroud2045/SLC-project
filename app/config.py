@@ -47,6 +47,24 @@ def _resolve_db_url(raw, allow_sqlite=False):
     elif raw.startswith('postgresql://'):
         raw = 'postgresql+psycopg://' + raw[len('postgresql://'):]
 
+    # Detect Render internal database hostnames when running on external platforms like Vercel
+    if is_vercel:
+        try:
+            from urllib.parse import urlsplit
+            parsed = urlsplit(raw)
+            host = parsed.hostname or ''
+            if host.startswith('dpg-') and '.' not in host:
+                raise ValueError(
+                    f"DATABASE_URL is set to Render's Internal Database URL (hostname '{host}'). "
+                    "Vercel runs outside Render and cannot resolve Render's internal private hostnames. "
+                    "Please update DATABASE_URL in your Vercel Project Settings using Render's "
+                    "'External Database URL' (which includes a full domain like .<region>-postgres.render.com)."
+                )
+        except ValueError:
+            raise
+        except Exception:
+            pass
+
     if (not allow_sqlite or is_vercel) and raw.startswith('sqlite://'):
         raise ValueError(
             "DATABASE_URL is set to a SQLite path. "
@@ -62,6 +80,10 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'default-fallback-dev-secret-key-do-not-use-in-prod'
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,
+        'pool_recycle': 300,
+    }
 
     # File upload configurations
     # On Vercel / serverless functions, the container filesystem is read-only except /tmp
@@ -132,6 +154,7 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     SESSION_COOKIE_SECURE = True  # Enforce HTTPS cookies in production
+    PREFERRED_URL_SCHEME = 'https'
 
     @classmethod
     def get_sqlalchemy_uri(cls):

@@ -114,3 +114,62 @@ def test_api_index_entrypoint_import(monkeypatch):
 
     assert api.index.app is not None
     assert api.index.app.config['SQLALCHEMY_DATABASE_URI'] == 'postgresql+psycopg://usr:pwd@host.render.com/db'
+
+
+def test_vercel_blocks_render_internal_url(monkeypatch):
+    """Ensure Vercel rejects Render internal hostnames (dpg-xxxx without domain)."""
+    monkeypatch.setenv('VERCEL', '1')
+    internal_url = "postgres://user:pass@dpg-daj5eolg1s2s739ft2fg-a/slcdb"
+    with pytest.raises(ValueError) as exc:
+        _resolve_db_url(internal_url, allow_sqlite=False)
+    assert "Render's Internal Database URL" in str(exc.value)
+    assert "dpg-daj5eolg1s2s739ft2fg-a" in str(exc.value)
+
+
+def test_vercel_allows_render_external_url(monkeypatch):
+    """Ensure Vercel accepts Render external hostnames (dpg-xxxx.<region>-postgres.render.com)."""
+    monkeypatch.setenv('VERCEL', '1')
+    external_url = "postgres://user:pass@dpg-daj5eolg1s2s739ft2fg-a.oregon-postgres.render.com/slcdb"
+    res = _resolve_db_url(external_url, allow_sqlite=False)
+    assert res == "postgresql+psycopg://user:pass@dpg-daj5eolg1s2s739ft2fg-a.oregon-postgres.render.com/slcdb"
+
+
+def test_vercel_json_configuration():
+    """Verify vercel.json exists and has correct rewrites to /api/index."""
+    import json
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    vercel_path = os.path.join(project_root, 'vercel.json')
+    assert os.path.isfile(vercel_path), "vercel.json must exist in project root"
+
+    with open(vercel_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+
+    assert 'rewrites' in data, "vercel.json must define rewrites"
+    assert any(
+        r.get('source') == '/(.*)' and r.get('destination') == '/api/index'
+        for r in data['rewrites']
+    ), "vercel.json must rewrite /(.*) to /api/index"
+
+
+def test_vercel_ignore_file():
+    """Verify .vercelignore exists and excludes venv and tests."""
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+    ignore_path = os.path.join(project_root, '.vercelignore')
+    assert os.path.isfile(ignore_path), ".vercelignore must exist"
+
+    with open(ignore_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    assert 'venv/' in content
+    assert '.env' in content
+    assert 'tests/' in content
+
+
+def test_sqlalchemy_engine_options_pooling():
+    """Verify pool_pre_ping and pool_recycle are configured to prevent connection drops."""
+    engine_opts = Config.SQLALCHEMY_ENGINE_OPTIONS
+    assert engine_opts.get('pool_pre_ping') is True
+    assert engine_opts.get('pool_recycle') == 300
+    assert ProductionConfig.PREFERRED_URL_SCHEME == 'https'
+
+

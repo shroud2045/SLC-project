@@ -103,4 +103,9 @@ def create_app(config_name: str = None) -> Flask:
             'app_tagline': app.config.get('APP_TAGLINE', "Lock In. Build Your Streak.")
         }
 
+    # Apply ProxyFix middleware for reverse proxy headers (Vercel / production)
+    if os.environ.get('VERCEL') or not app.debug:
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
     return app

@@ -1,27 +1,77 @@
 # Deployment Guide — Shroud's Lockin Crib (SLC)
 
-This guide covers deploying SLC to **Render.com** with a persistent PostgreSQL
-database, and also includes a VPS/NGINX option for self-hosted deployments.
+This guide covers deploying SLC to **Vercel** (Serverless Functions) with a persistent **Render PostgreSQL** database, as well as standalone Render.com and VPS/NGINX options.
 
 ---
 
-## Production Architecture
+## Architecture: Vercel + Render PostgreSQL
 
 ```
-Browser → HTTPS → Render Web Service (Gunicorn + Flask)
-                         ↓
+Browser → HTTPS → Vercel Serverless Function (api/index.py)
+                         ↓ (external SSL connection)
               Render PostgreSQL Database
               (persistent, survives restarts)
 ```
 
-- **Application server**: Gunicorn (multi-worker)
+- **Application server**: Vercel Serverless Functions (`@vercel/python`)
 - **Database**: Render PostgreSQL (external, persistent)
-- **Migrations**: Flask-Migrate / Alembic (`flask --app manage.py db upgrade`)
-- **Static data**: Seeded idempotently on first deploy
+- **Routing**: `vercel.json` rewrites all traffic `/(.*)` to `/api/index`
+- **Static data**: Pre-seeded in Render PostgreSQL
 
 ---
 
-## Option A: Render.com (Recommended)
+## Option A: Vercel + Render PostgreSQL (Recommended)
+
+### Step 1 — Verify Your Render PostgreSQL Database
+
+Ensure your Render PostgreSQL instance is active and copy the **External Database URL**:
+```
+postgresql://slc_user:JLlyWAi2mPqNPAbOmGRbNpRm8fMDOk1D@dpg-daj5eolg1s2s739ft2fg-a.oregon-postgres.render.com/slc_0i0y
+```
+*(Render may show `postgres://` — the application converts this to `postgresql+psycopg://` automatically for psycopg3).*
+
+> ⚠️ **Note**: Always use the **External Database URL** (containing `.render.com`). Render's private internal hostnames (`dpg-...` without a domain) cannot be reached from outside Render.
+
+### Step 2 — Push Code to GitHub
+
+Make sure your repository has `vercel.json`, `.vercelignore`, and `api/index.py`:
+```bash
+git add .
+git commit -m "Configure Vercel serverless deployment"
+git push origin main
+```
+
+### Step 3 — Import Project on Vercel
+
+1. Log into [vercel.com](https://vercel.com).
+2. Click **Add New…** → **Project**.
+3. Select your GitHub repository (`SLC-project`) and click **Import**.
+4. Leave **Framework Preset** as **Other** (Vercel automatically detects Python and `api/index.py`).
+5. Leave **Root Directory** as `./`.
+
+### Step 4 — Configure Environment Variables on Vercel
+
+Before clicking Deploy, expand the **Environment Variables** section and add:
+
+| Key | Recommended Value | Description |
+|---|---|---|
+| `DATABASE_URL` | `postgresql://slc_user:JLlyWAi2mPqNPAbOmGRbNpRm8fMDOk1D@dpg-daj5eolg1s2s739ft2fg-a.oregon-postgres.render.com/slc_0i0y` | Render External PostgreSQL URL |
+| `SECRET_KEY` | *(Run `python3 -c "import secrets; print(secrets.token_hex(32))"`)* | 64-char session encryption key |
+| `FLASK_ENV` | `production` | Enables production hardening |
+| `SESSION_COOKIE_SECURE` | `True` | Enforces HTTPS cookie flag |
+| `UPLOAD_FOLDER` | `/tmp/uploads` | Writable directory in serverless |
+
+*(Optional variables like `AI_PROVIDER`, `OPENAI_API_KEY`, etc. can also be configured if used).*
+
+### Step 5 — Deploy and Verify
+
+1. Click **Deploy**. Vercel will install `requirements.txt` and prepare the serverless bundle in ~1 minute.
+2. Once complete, click your assigned domain (e.g. `https://your-project.vercel.app`).
+3. Your app is live! Test registering a user or exploring achievements to verify database persistence.
+
+---
+
+## Option B: Render.com (Full Stack Web Service)
 
 ### Step 1 — Create a Render PostgreSQL Database
 
@@ -176,7 +226,7 @@ GEMINI_API_KEY=         # optional: 'gemini' provider
 
 ---
 
-## Option B: VPS/NGINX (Self-Hosted)
+## Option C: VPS/NGINX (Self-Hosted)
 
 ### 1. System Setup
 
