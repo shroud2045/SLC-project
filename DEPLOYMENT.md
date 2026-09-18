@@ -24,9 +24,9 @@ Browser → HTTPS → Vercel Serverless Function (api/index.py)
 
 ### Step 1 — Verify Your Render PostgreSQL Database
 
-Ensure your Render PostgreSQL instance is active and copy the **External Database URL**:
+Ensure your Render PostgreSQL instance is active and copy the **External Database URL** from Render dashboard:
 ```
-postgresql://slc_user:JLlyWAi2mPqNPAbOmGRbNpRm8fMDOk1D@dpg-daj5eolg1s2s739ft2fg-a.oregon-postgres.render.com/slc_0i0y
+postgresql://<user>:<password>@<external-host>.oregon-postgres.render.com/<database>?sslmode=require
 ```
 *(Render may show `postgres://` — the application converts this to `postgresql+psycopg://` automatically for psycopg3).*
 
@@ -55,7 +55,7 @@ Before clicking Deploy, expand the **Environment Variables** section and add:
 
 | Key | Recommended Value | Description |
 |---|---|---|
-| `DATABASE_URL` | `postgresql://slc_user:JLlyWAi2mPqNPAbOmGRbNpRm8fMDOk1D@dpg-daj5eolg1s2s739ft2fg-a.oregon-postgres.render.com/slc_0i0y` | Render External PostgreSQL URL |
+| `DATABASE_URL` | `postgresql://<user>:<password>@<external-host>.render.com/<database>?sslmode=require` | Render External PostgreSQL URL |
 | `SECRET_KEY` | *(Run `python3 -c "import secrets; print(secrets.token_hex(32))"`)* | 64-char session encryption key |
 | `FLASK_ENV` | `production` | Enables production hardening |
 | `SESSION_COOKIE_SECURE` | `True` | Enforces HTTPS cookie flag |
