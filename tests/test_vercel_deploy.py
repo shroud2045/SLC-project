@@ -135,7 +135,7 @@ def test_vercel_allows_render_external_url(monkeypatch):
 
 
 def test_vercel_json_configuration():
-    """Verify vercel.json exists and has correct rewrites to /api/index."""
+    """Verify vercel.json uses the current zero-config Flask setup."""
     import json
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     vercel_path = os.path.join(project_root, 'vercel.json')
@@ -144,11 +144,9 @@ def test_vercel_json_configuration():
     with open(vercel_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
 
-    assert 'rewrites' in data, "vercel.json must define rewrites"
-    assert any(
-        r.get('source') == '/(.*)' and r.get('destination') == '/api/index'
-        for r in data['rewrites']
-    ), "vercel.json must rewrite /(.*) to /api/index"
+    assert isinstance(data, dict)
+    assert data.get('$schema') == 'https://openapi.vercel.sh/vercel.json'
+    assert 'rewrites' not in data, "vercel.json must not use the old catch-all rewrite"
 
 
 def test_vercel_ignore_file():
